@@ -2,14 +2,15 @@
 
 using namespace KUKA_CONTROL;
 
-KukaFRIController::KukaFRIController(uint16_t port, const std::string hostname)
-  : running_enabled_(false),
-  	client_(),
-	application_port_(port),
-	application_hostname_(hostname),
-	commanded_joint_position_queue_(client_.getCommandedJointPositionQueue()),
-	actual_joint_position_queue_(client_.getActualJointPositionQueue()),
-	actual_joint_torque_queue_(client_.getActualJointTorqueQueue())
+KukaFRIController::KukaFRIController(control_mode target_mode, uint16_t port, const std::string hostname)
+	: running_enabled_(false),
+	  client_(target_mode),
+	  application_port_(port),
+	  application_hostname_(hostname),
+	  commanded_joint_position_queue_(client_.getJointPositionCommandingQueue()),
+	  commanded_joint_torque_queue_(client_.getJointTorqueCommandingQueue()),
+	  actual_joint_position_queue_(client_.getActualJointPositionQueue()),
+	  actual_joint_torque_queue_(client_.getActualJointTorqueQueue())
 {
 
 }
@@ -33,26 +34,45 @@ void KukaFRIController::stop()
 	lbr_application_thread_.join();
 }
 
-bool KukaFRIController::setJointPosition(jarray joint_position)
+bool KukaFRIController::setTargetJointPosition(jarray target_joint_position)
 {
-	return actual_joint_position_queue_->push(joint_position);
+	return commanded_joint_position_queue_->push(target_joint_position);
 }
 
-bool KukaFRIController::moveJointPositionAt(jarray joint_step)
+bool KukaFRIController::setTargetJointTorque(jarray target_joint_torque)
 {
-	jarray current_position;
-	if(actual_joint_position_queue_->pop(current_position))
-	{
-		for(int i = 0; i < current_position.size(); ++i)
-		{
-			current_position[i] += joint_step[i];
-		}
-		return commanded_joint_position_queue_->push(current_position);
-	}
-	else
-	{
-		return false;
-	}
+	return commanded_joint_torque_queue_->push(target_joint_torque);
+}
+// bool KukaFRIController::moveJointPositionAt(jarray joint_step)
+// {
+// 	jarray current_position;
+// 	if(actual_joint_position_queue_->pop(current_position))
+// 	{
+// 		for(int i = 0; i < current_position.size(); ++i)
+// 		{
+// 			current_position[i] += joint_step[i];
+// 		}
+// 		return commanded_queue_->push(current_position);
+// 	}
+// 	else
+// 	{
+// 		return false;
+// 	}
+// }
+
+jarray KukaFRIController::getJointPosition()
+{
+	jarray joint_position;
+	while(!actual_joint_position_queue_->pop(joint_position)) {}
+	return joint_position;
+}
+
+jarray KukaFRIController::getTorque()
+{
+	jarray torque;
+	while(!actual_joint_torque_queue_->pop(torque)) {}
+	return torque;
+
 }
 
 void KukaFRIController::lbr_application()

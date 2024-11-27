@@ -1,16 +1,24 @@
 #include "customlbrclient.hpp"
 
+// #include <stdio.h>
+
 using namespace KUKA_CONTROL;
 
-CustomLBRClient::CustomLBRClient()
-  : commanded_joint_position_queue_(new jqueue(MAX_QUEUE_SIZE)),
-    actual_joint_position_queue_(new jqueue(MAX_QUEUE_SIZE)),
-    actual_joint_torque_queue_(new jqueue(MAX_QUEUE_SIZE))
+CustomLBRClient::CustomLBRClient(control_mode mode)
+    : commanded_joint_position_queue_(new jqueue(MAX_QUEUE_SIZE)),
+      commanded_joint_torque_queue_(new jqueue(MAX_QUEUE_SIZE)),
+      actual_joint_position_queue_(new jqueue(MAX_QUEUE_SIZE)),
+      actual_joint_torque_queue_(new jqueue(MAX_QUEUE_SIZE)),
+      mode_(mode)
 {
-
 }
 
-std::shared_ptr<jqueue> CustomLBRClient::getCommandedJointPositionQueue()
+std::shared_ptr<jqueue> CustomLBRClient::getJointTorqueCommandingQueue()
+{
+    return commanded_joint_torque_queue_;
+}
+
+std::shared_ptr<jqueue> CustomLBRClient::getJointPositionCommandingQueue()
 {
     return commanded_joint_position_queue_;
 }
@@ -30,18 +38,43 @@ void CustomLBRClient::onStateChange(ESessionState oldState, ESessionState newSta
     std::cout << "LBRiiwaClient state changed from [" << stateToString(oldState) << "] to [" << stateToString(newState) << "] \n";
 }
 
+void CustomLBRClient::waitForCommand()
+{
+    LBRClient::waitForCommand();
+    if (mode_ == TORQUE && robotState().getClientCommandMode() == KUKA::FRI::TORQUE)
+    {
+        robotCommand().setTorque(last_commanded_joint_position_.data());
+    }
+}
+
 void CustomLBRClient::command()
 {
-    std::memcpy(last_actual_joint_position_.data(), robotState().getIpoJointPosition(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
+    // printf("%f", robotState().getSampleTime());
+    std::memcpy(last_actual_joint_position_.data(), robotState().getMeasuredJointPosition(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
     std::memcpy(last_actual_joint_torque_.data(), robotState().getExternalTorque(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
     actual_joint_position_queue_->push(last_actual_joint_position_);
     actual_joint_torque_queue_->push(last_actual_joint_torque_);
-    last_commanded_joint_position_ = last_actual_joint_position_;
-    if(commanded_joint_position_queue_->pop(last_commanded_joint_position_))
+    switch(mode_)
     {
-        
+    case TORQUE:
+        LBRClient::command();
+        if (robotState().getClientCommandMode() == KUKA::FRI::TORQUE)
+        {
+            last_commanded_joint_torque_ = last_actual_joint_torque_;
+            if (commanded_joint_torque_queue_->pop(last_commanded_joint_torque_))
+            {
+            }
+            robotCommand().setTorque(last_commanded_joint_torque_.data());
+        }
+    case JOINT_POSITION:
+        last_commanded_joint_position_ = last_actual_joint_position_;
+        if (commanded_joint_position_queue_->pop(last_commanded_joint_position_))
+        {
+        }
+        robotCommand().setJointPosition(last_commanded_joint_position_.data());
+        break;
     }
-    robotCommand().setJointPosition(last_commanded_joint_position_.data());
+    
 }
 
 std::string CustomLBRClient::stateToString(ESessionState state)

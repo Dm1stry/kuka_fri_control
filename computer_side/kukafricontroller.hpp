@@ -18,13 +18,16 @@ namespace KUKA_CONTROL
 class KukaFRIController
 {
 public:
-    KukaFRIController(uint16_t port=30200, const std::string hostname = "");
+    KukaFRIController(control_mode target_mode = JOINT_POSITION, uint16_t port=30200, const std::string hostname = "");
     ~KukaFRIController();
     void start();
     void stop();
 
-    bool setJointPosition(jarray joint_position);
-    bool moveJointPositionAt(jarray joint_step);
+    bool setTargetJointPosition(jarray target_joint_position);
+    bool setTargetJointTorque(jarray target_joint_torque);
+        // bool moveJointPositionAt(jarray joint_step);
+    jarray getJointPosition();
+    jarray getTorque();
     //jarray getLastJointPosition();
 
 
@@ -39,6 +42,7 @@ private:
     std::string application_hostname_;
 
     std::shared_ptr<jqueue> commanded_joint_position_queue_;
+    std::shared_ptr<jqueue> commanded_joint_torque_queue_;
     std::shared_ptr<jqueue> actual_joint_position_queue_;
     std::shared_ptr<jqueue> actual_joint_torque_queue_;
 
