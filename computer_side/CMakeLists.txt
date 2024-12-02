@@ -38,12 +38,20 @@ if(${COMPILE_TORQUE_OVERLAY})
 	)
 endif()
 
+set(LOGGER_SOURCES
+	logger/ilogger.hpp
+	logger/filelogger.hpp		logger/filelogger.cpp
+	logger/jarraylogger.hpp		logger/jarraylogger.cpp
+)
+
 set(SOURCES
 	main.cpp
 	customlbrclient.hpp					customlbrclient.cpp
 	# jointpositionclient.hpp				jointpositionclient.cpp
 	# torqueclient.hpp					torqueclient.cpp
 	kukafricontroller.hpp				kukafricontroller.cpp
+
+	${LOGGER_SOURCES}
 	# Сюда сорцы
 )
 
