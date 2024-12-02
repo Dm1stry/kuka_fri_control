@@ -40,10 +40,11 @@ void CustomLBRClient::onStateChange(ESessionState oldState, ESessionState newSta
 
 void CustomLBRClient::waitForCommand()
 {
-    LBRClient::waitForCommand();
+    //LBRClient::waitForCommand();
+    robotCommand().setJointPosition(last_commanded_joint_position_.data());
     if (mode_ == TORQUE && robotState().getClientCommandMode() == KUKA::FRI::TORQUE)
     {
-        robotCommand().setTorque(last_commanded_joint_position_.data());
+        robotCommand().setTorque(last_actual_joint_torque_.data());
     }
 }
 
