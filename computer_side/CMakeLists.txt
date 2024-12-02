@@ -50,6 +50,7 @@ set(SOURCES
 	# jointpositionclient.hpp				jointpositionclient.cpp
 	# torqueclient.hpp					torqueclient.cpp
 	kukafricontroller.hpp				kukafricontroller.cpp
+	apiserver.hpp						apiserver.cpp
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
@@ -67,6 +68,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
+find_package(nlohmann_json REQUIRED)
+
 add_executable(${PROJECT}
     ${SOURCES}
 )
@@ -75,6 +78,7 @@ target_link_libraries(${PROJECT}
     ${FRI_LIB}
 	${Boost_LIBRARIES}
 	Threads::Threads
+	nlohmann_json::nlohmann_json
 )
 
 target_include_directories(${PROJECT} PUBLIC
