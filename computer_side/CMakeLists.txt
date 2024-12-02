@@ -27,6 +27,8 @@ endif()
 set(COMPILE_TORQUE_OVERLAY ON)
 set(T_DIR examples/LBRTorqueSineOverlay)
 
+set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
+
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
 		${T_DIR}/LBRTorqueSineOverlayApp.cpp
@@ -45,6 +47,7 @@ set(SOURCES
 	# torqueclient.hpp					torqueclient.cpp
 	kukafricontroller.hpp				kukafricontroller.cpp
 	# Сюда сорцы
+	${CONTROL}/control.hpp				${CONTROL}/control.cpp
 )
 
 
