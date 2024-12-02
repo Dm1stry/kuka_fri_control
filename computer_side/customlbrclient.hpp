@@ -67,7 +67,10 @@ protected:
     jarray last_commanded_joint_torque_;
     jarray last_commanded_joint_position_;
     jarray last_actual_joint_position_;
-    jarray last_actual_joint_torque_;  
+    jarray last_actual_joint_torque_;
+
+    std::atomic<bool> joint_position_initialized_;
+    std::atomic<bool> joint_torque_initialized_;
 
     const control_mode mode_;
 
