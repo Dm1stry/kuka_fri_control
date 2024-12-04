@@ -4,6 +4,8 @@
 #include <iostream>
 #include <iomanip>
 
+#include "logger/jarraylogger.hpp"
+
 using namespace KUKA_CONTROL;
 
 int main(int argc, char **argv)
@@ -27,12 +29,20 @@ int main(int argc, char **argv)
     bool flag1 = true;
 
     jarray initial_position = kuka.getJointPosition();
+    LOGGER::JArrayLogger pos_logger("actual_position");
+    LOGGER::JArrayLogger torq_logger("actual_torque");
+
+    LOGGER::JArrayLogger commanded_pos_logger("commanded_position");
+    LOGGER::JArrayLogger commanded_torq_logger("commanded_torque");
 
     while (true)
     {
         current_position = kuka.getJointPosition();
         current_torque = kuka.getTorque();
-        
+
+        pos_logger.log(current_position);
+        torq_logger.log(current_torque);
+
         //torque[5] += 0.1;
         q_dot = (current_position[5] - prev_pos) / 0.005;
         
@@ -53,6 +63,8 @@ int main(int argc, char **argv)
 
         initial_position[5] = current_position[5];
 
+        commanded_pos_logger.log(initial_position);
+        commanded_torq_logger.log({0, 0, 0, 0, 0, last_joint_torque, 0});
         kuka.setTargetJointPosition(initial_position);
         kuka.setTargetJointTorque({0, 0, 0, 0, 0, last_joint_torque, 0});
         // kuka.setTarget(torque);

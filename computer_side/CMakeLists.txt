@@ -40,12 +40,21 @@ if(${COMPILE_TORQUE_OVERLAY})
 	)
 endif()
 
+set(LOGGER_SOURCES
+	logger/ilogger.hpp
+	logger/filelogger.hpp		logger/filelogger.cpp
+	logger/jarraylogger.hpp		logger/jarraylogger.cpp
+)
+
 set(SOURCES
 	main.cpp
 	customlbrclient.hpp					customlbrclient.cpp
 	# jointpositionclient.hpp				jointpositionclient.cpp
 	# torqueclient.hpp					torqueclient.cpp
 	kukafricontroller.hpp				kukafricontroller.cpp
+	apiserver.hpp						apiserver.cpp
+
+	${LOGGER_SOURCES}
 	# Сюда сорцы
 	${CONTROL}/control.hpp				${CONTROL}/control.cpp
 )
@@ -69,6 +78,8 @@ endif()
 
 find_package(Threads REQUIRED)
 
+find_package(nlohmann_json REQUIRED)
+
 add_executable(${PROJECT}
     ${SOURCES}
 )
@@ -77,12 +88,14 @@ target_link_libraries(${PROJECT}
     ${FRI_LIB}
 	${Boost_LIBRARIES}
 	Threads::Threads
-
-	# Control
+	nlohmann_json::nlohmann_json
+  
+  	# Control
 	${OpenBLAS_LIB}
     ${Lapack_LIB}
     ${FORTRUN}
     Eigen3::Eigen
+
 )
 
 target_include_directories(${PROJECT} PUBLIC

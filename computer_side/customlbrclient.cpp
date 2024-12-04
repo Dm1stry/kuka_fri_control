@@ -9,6 +9,7 @@ CustomLBRClient::CustomLBRClient(control_mode mode)
       commanded_joint_torque_queue_(new jqueue(MAX_QUEUE_SIZE)),
       actual_joint_position_queue_(new jqueue(MAX_QUEUE_SIZE)),
       actual_joint_torque_queue_(new jqueue(MAX_QUEUE_SIZE)),
+      joint_position_initialized_(false),
       mode_(mode)
 {
 }
@@ -40,10 +41,11 @@ void CustomLBRClient::onStateChange(ESessionState oldState, ESessionState newSta
 
 void CustomLBRClient::waitForCommand()
 {
-    LBRClient::waitForCommand();
+    //LBRClient::waitForCommand();
+    robotCommand().setJointPosition(last_commanded_joint_position_.data());
     if (mode_ == TORQUE && robotState().getClientCommandMode() == KUKA::FRI::TORQUE)
     {
-        robotCommand().setTorque(last_commanded_joint_position_.data());
+        robotCommand().setTorque(last_commanded_joint_torque_.data());
     }
 }
 
@@ -60,14 +62,22 @@ void CustomLBRClient::command()
         LBRClient::command();
         if (robotState().getClientCommandMode() == KUKA::FRI::TORQUE)
         {
-            last_commanded_joint_torque_ = last_actual_joint_torque_;
+            if (!joint_torque_initialized_.load())
+            {
+                last_commanded_joint_torque_ = last_actual_joint_torque_;
+                joint_torque_initialized_.store(true);
+            }
             if (commanded_joint_torque_queue_->pop(last_commanded_joint_torque_))
             {
             }
             robotCommand().setTorque(last_commanded_joint_torque_.data());
         }
     case JOINT_POSITION:
-        last_commanded_joint_position_ = last_actual_joint_position_;
+        if (!joint_position_initialized_.load())
+        {
+            last_commanded_joint_position_ = last_actual_joint_position_;
+            joint_position_initialized_.store(true);
+        }
         if (commanded_joint_position_queue_->pop(last_commanded_joint_position_))
         {
         }
