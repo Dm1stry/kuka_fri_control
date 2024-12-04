@@ -32,6 +32,7 @@ namespace kuka_control
         const double Kv_;
         const double static_friction_;
         const double dynamic_friction_;
+        const double v_max_;
 
         double q_previous_;
 
@@ -39,11 +40,12 @@ namespace kuka_control
         double q_;
         double v_;
 
+
         double q_d_;
 
     public: 
 
-        Control(const double Kp = 1, const double Kd = 0, const double Kv = 0, const double time_tick = 0.005, const double static_friction = 0, const double dynamic_friction = 0);
+        Control(const double Kp = 1, const double Kd = 0, const double Kv = 0, const double v_max = 2, const double time_tick = 0.005, const double static_friction = 0, const double dynamic_friction = 0);
         // std::array<double, NUM_J> clacTorque(std::array<double, NUM_J> q, std::array<double, NUM_J> q_d);
         double calcTorque(double q, double q_d);
     };
