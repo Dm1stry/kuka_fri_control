@@ -46,27 +46,28 @@ int main(int argc, char **argv)
         //torque[5] += 0.1;
         q_dot = (current_position[5] - prev_pos) / 0.005;
         
-        last_joint_torque = Kp * (q_desired_ - current_position[5]) /* - Kd * q_dot */;
-        if (abs(q_dot) > 0.5){
-            last_joint_torque = 0;
-            flag1 = false;
-        }else{
-            flag1 = true;
-        }
+        last_joint_torque = 0;
+        //Kp * (q_desired_ - current_position[5]) /* - Kd * q_dot */;
+        // if (abs(q_dot) > 0.5){
+        //     last_joint_torque = 0;
+        //     flag1 = false;
+        // }else{
+        //     flag1 = true;
+        // }
         if(flag1)
-            std::cout << std::setprecision(4) << current_position[5] << "\t\t" << q_dot << "\t\t" << current_torque[5] << "\t\t" << last_joint_torque << '\n';
+            std::cout << std::setprecision(4) << current_position[5] << "\t\t" << q_dot << "\t\t" << current_torque[6] << "\t\t" << last_joint_torque << '\n';
         
-        prev_pos = current_position[5];
+        prev_pos = current_position[6];
 
         // current_position[5]
         // current_position[5] += 0.0001;
 
-        initial_position[5] = current_position[5];
+        initial_position[6] = current_position[6];
 
         commanded_pos_logger.log(initial_position);
-        commanded_torq_logger.log({0, 0, 0, 0, 0, last_joint_torque, 0});
+        commanded_torq_logger.log({0, 0, 0, 0, 0, 0, current_torque[6]});
         kuka.setTargetJointPosition(initial_position);
-        kuka.setTargetJointTorque({0, 0, 0, 0, 0, last_joint_torque, 0});
+        kuka.setTargetJointTorque({0, 0, 0, 0, 0, 0, last_joint_torque});
         // kuka.setTarget(torque);
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }
