@@ -52,6 +52,13 @@ set(SOURCES
 
 
 find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib REQUIRED)
+
+# Control
+find_library(OpenBLAS_LIB libopenblas NAMES libopenblas.a openblas HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
+find_library(Lapack_LIB liblapack NAMES liblapack lapack HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
+find_library(FORTRUN libgfortran.so.5 NAMES libgfortran5 gfortran gfortran5 gfortran REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
 message("-- FRI library found in: ${FRI_LIB}")
 
 find_package(Boost 1.71)
@@ -70,11 +77,19 @@ target_link_libraries(${PROJECT}
     ${FRI_LIB}
 	${Boost_LIBRARIES}
 	Threads::Threads
+
+	# Control
+	${OpenBLAS_LIB}
+    ${Lapack_LIB}
+    ${FORTRUN}
+    Eigen3::Eigen
 )
 
 target_include_directories(${PROJECT} PUBLIC
 	deps/include/
 	${Boost_INCLUDE_DIRS}
+
+	deps/include/control
 )
 
 if(COMPILE_JOINT_OVERLAY)
