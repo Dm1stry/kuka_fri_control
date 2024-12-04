@@ -18,7 +18,7 @@ public:
 	virtual void log(const std::string& message) override;
 	~FileLogger();
 private:
-	std::ofstream logger_stream_;
+	std::fstream logger_stream_;
 }; // class FileLogger
 
 }; // namespace LOGGER
