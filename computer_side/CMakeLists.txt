@@ -27,6 +27,8 @@ endif()
 set(COMPILE_TORQUE_OVERLAY ON)
 set(T_DIR examples/LBRTorqueSineOverlay)
 
+set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
+
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
 		${T_DIR}/LBRTorqueSineOverlayApp.cpp
@@ -54,10 +56,18 @@ set(SOURCES
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
+	${CONTROL}/control.hpp				${CONTROL}/control.cpp
 )
 
 
 find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib REQUIRED)
+
+# Control
+find_library(OpenBLAS_LIB libopenblas NAMES libopenblas.a openblas HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
+find_library(Lapack_LIB liblapack NAMES liblapack lapack HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
+find_library(FORTRUN libgfortran.so.5 NAMES libgfortran5 gfortran gfortran5 gfortran REQUIRED)
+find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+
 message("-- FRI library found in: ${FRI_LIB}")
 
 find_package(Boost 1.71)
@@ -79,11 +89,20 @@ target_link_libraries(${PROJECT}
 	${Boost_LIBRARIES}
 	Threads::Threads
 	nlohmann_json::nlohmann_json
+  
+  	# Control
+	${OpenBLAS_LIB}
+    ${Lapack_LIB}
+    ${FORTRUN}
+    Eigen3::Eigen
+
 )
 
 target_include_directories(${PROJECT} PUBLIC
 	deps/include/
 	${Boost_INCLUDE_DIRS}
+
+	deps/include/control
 )
 
 if(COMPILE_JOINT_OVERLAY)
