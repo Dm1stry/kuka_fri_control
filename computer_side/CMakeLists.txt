@@ -49,8 +49,6 @@ set(LOGGER_SOURCES
 set(SOURCES
 	main.cpp
 	customlbrclient.hpp					customlbrclient.cpp
-	# jointpositionclient.hpp				jointpositionclient.cpp
-	# torqueclient.hpp					torqueclient.cpp
 	kukafricontroller.hpp				kukafricontroller.cpp
 	apiserver.hpp						apiserver.cpp
 
