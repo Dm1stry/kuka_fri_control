@@ -46,7 +46,7 @@ int main(int argc, char **argv)
         //torque[5] += 0.1;
         q_dot = (current_position[5] - prev_pos) / 0.005;
         
-        last_joint_torque = 0;
+        last_joint_torque += 0.0001;
         //Kp * (q_desired_ - current_position[5]) /* - Kd * q_dot */;
         // if (abs(q_dot) > 0.5){
         //     last_joint_torque = 0;
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
         initial_position[6] = current_position[6];
 
         commanded_pos_logger.log(initial_position);
-        commanded_torq_logger.log({0, 0, 0, 0, 0, 0, current_torque[6]});
+        commanded_torq_logger.log({0, 0, 0, 0, 0, 0, last_joint_torque});
         kuka.setTargetJointPosition(initial_position);
         kuka.setTargetJointTorque({0, 0, 0, 0, 0, 0, last_joint_torque});
         // kuka.setTarget(torque);
