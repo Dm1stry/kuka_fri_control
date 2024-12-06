@@ -7,10 +7,14 @@ KukaFRIController::KukaFRIController(control_mode target_mode, uint16_t port, co
 	  client_(target_mode),
 	  application_port_(port),
 	  application_hostname_(hostname),
-	  commanded_joint_position_queue_(client_.getJointPositionCommandingQueue()),
-	  commanded_joint_torque_queue_(client_.getJointTorqueCommandingQueue()),
-	  actual_joint_position_queue_(client_.getActualJointPositionQueue()),
-	  actual_joint_torque_queue_(client_.getActualJointTorqueQueue())
+	  measured_joint_position_queue_(client_.getMeasuredJointPositionQueue()),
+	  commanded_joint_position_queue_(client_.getCommandedJointPositionQueue()),
+	  ipo_joint_position_queue_(client_.getIpoJointPositionQueue()),
+	  measured_joint_torque_queue_(client_.getMeasuredJointTorqueQueue()),
+	  commanded_joint_torque_queue_(client_.getCommandedJointTorqueQueue()),
+	  external_joint_torque_queue_(client_.getExternalJointTorqueQueue()),
+	  commanding_joint_position_queue_(client_.getJointPositionCommandingQueue()),
+	  commanding_joint_torque_queue_(client_.getJointTorqueCommandingQueue())
 {
 
 }
@@ -36,12 +40,12 @@ void KukaFRIController::stop()
 
 bool KukaFRIController::setTargetJointPosition(jarray target_joint_position)
 {
-	return commanded_joint_position_queue_->push(target_joint_position);
+	return commanding_joint_position_queue_->push(target_joint_position);
 }
 
 bool KukaFRIController::setTargetJointTorque(jarray target_joint_torque)
 {
-	return commanded_joint_torque_queue_->push(target_joint_torque);
+	return commanding_joint_torque_queue_->push(target_joint_torque);
 }
 // bool KukaFRIController::moveJointPositionAt(jarray joint_step)
 // {
@@ -60,19 +64,46 @@ bool KukaFRIController::setTargetJointTorque(jarray target_joint_torque)
 // 	}
 // }
 
-jarray KukaFRIController::getJointPosition()
+jarray KukaFRIController::getMeasuredJointPosition()
 {
 	jarray joint_position;
-	while(!actual_joint_position_queue_->pop(joint_position)) {}
+	while(!measured_joint_position_queue_->pop(joint_position)) {}
 	return joint_position;
 }
 
-jarray KukaFRIController::getTorque()
+jarray KukaFRIController::getCommandedJointPosition()
+{
+	jarray joint_position;
+	while (!commanded_joint_position_queue_->pop(joint_position)) {}
+	return joint_position;
+}
+
+jarray KukaFRIController::getIpoJointPosition()
+{
+	jarray joint_position;
+	while(!ipo_joint_position_queue_->pop(joint_position)) {}
+	return joint_position;
+}
+
+jarray KukaFRIController::getMeasuredJointTorque()
 {
 	jarray torque;
-	while(!actual_joint_torque_queue_->pop(torque)) {}
+	while (!measured_joint_torque_queue_->pop(torque)) {}
 	return torque;
+}
 
+jarray KukaFRIController::getCommandedJointTorque()
+{
+	jarray torque;
+	while (!commanded_joint_torque_queue_->pop(torque)) {}
+	return torque;
+}
+
+jarray KukaFRIController::getExternalJointTorque()
+{
+	jarray torque;
+	while (!external_joint_torque_queue_->pop(torque)) {}
+	return torque;
 }
 
 void KukaFRIController::lbr_application()

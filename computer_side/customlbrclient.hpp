@@ -35,10 +35,16 @@ class CustomLBRClient : public KUKA::FRI::LBRClient
 public:
     CustomLBRClient(control_mode mode = JOINT_POSITION);
 
+    std::shared_ptr<jqueue> getMeasuredJointPositionQueue();
+    std::shared_ptr<jqueue> getCommandedJointPositionQueue();
+    std::shared_ptr<jqueue> getIpoJointPositionQueue();
+
+    std::shared_ptr<jqueue> getMeasuredJointTorqueQueue();
+    std::shared_ptr<jqueue> getCommandedJointTorqueQueue();
+    std::shared_ptr<jqueue> getExternalJointTorqueQueue();
+
     std::shared_ptr<jqueue> getJointTorqueCommandingQueue();
     std::shared_ptr<jqueue> getJointPositionCommandingQueue();
-    std::shared_ptr<jqueue> getActualJointPositionQueue();
-    std::shared_ptr<jqueue> getActualJointTorqueQueue();
 
     /**
      * \brief Callback for FRI state changes.
@@ -59,17 +65,30 @@ public:
     virtual void command();
     
 protected:
-    std::shared_ptr<jqueue> commanded_joint_position_queue_;
-    std::shared_ptr<jqueue> commanded_joint_torque_queue_;
-    std::shared_ptr<jqueue> actual_joint_position_queue_;
-    std::shared_ptr<jqueue> actual_joint_torque_queue_;
+    std::shared_ptr<jqueue> measured_joint_position_queue_;  // Meashured position [rad] queue dataflow robot -> computer 
+    std::shared_ptr<jqueue> commanded_joint_position_queue_; // Commanded position [rad] queue dataflow robot -> computer (to check what have been actually setten)
+    std::shared_ptr<jqueue> ipo_joint_position_queue_;   // Interpolated setpoint position [rad] as basis for path superposition in queue dataflow robot -> computer
 
-    jarray last_commanded_joint_torque_;
+    std::shared_ptr<jqueue> measured_joint_torque_queue_;  // Meashured torque [Nm] queue dataflow robot -> computer (to read from)
+    std::shared_ptr<jqueue> commanded_joint_torque_queue_; // Commanded torque [Nm] queue dataflow robot -> computer (to read from) (to check what have been actually setten)
+    std::shared_ptr<jqueue> external_joint_torque_queue_;  // External torque [Nm] queue dataflow robot -> computer (to read from)
+
+    std::shared_ptr<jqueue> commanding_joint_position_queue_; // Commanding position [rad] queue dataflow computer -> robot (to write to) (to set new position)
+    std::shared_ptr<jqueue> commanding_joint_torque_queue_;  // Commanding torque [Nm] queue dataflow computer -> robot (to write to) (to set new torque)
+
+    jarray last_measured_joint_position_;
     jarray last_commanded_joint_position_;
-    jarray last_actual_joint_position_;
-    jarray last_actual_joint_torque_;
+    jarray last_ipo_joint_position_;
 
-    std::atomic<bool> joint_position_initialized_;
+    jarray last_measured_joint_torque_;
+    jarray last_commanded_joint_torque_;
+    jarray last_external_joint_torque_;
+
+    jarray last_commanding_joint_position_;
+    jarray last_commanding_joint_torque_;
+
+    std::atomic<bool>
+        joint_position_initialized_;
     std::atomic<bool> joint_torque_initialized_;
 
     const control_mode mode_;

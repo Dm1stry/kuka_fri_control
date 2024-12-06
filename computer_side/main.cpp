@@ -23,12 +23,13 @@ int main(int argc, char **argv)
     constexpr double Kd = std::sqrt(Kp) * 2;
     const double q_desired = 0.5;
     double q_desired_ = q_desired;
-    double q0 = kuka.getJointPosition()[5];
+    double q0 = kuka.getMeasuredJointPosition()[5];
     double prev_pos = 0;
     double q_dot = 0;
     bool flag1 = true;
 
-    jarray initial_position = kuka.getJointPosition();
+    jarray initial_position = kuka.getMeasuredJointPosition();
+    
     LOGGER::JArrayLogger pos_logger("actual_position");
     LOGGER::JArrayLogger torq_logger("actual_torque");
 
@@ -37,8 +38,8 @@ int main(int argc, char **argv)
 
     while (true)
     {
-        current_position = kuka.getJointPosition();
-        current_torque = kuka.getTorque();
+        current_position = kuka.getMeasuredJointPosition();
+        current_torque = kuka.getMeasuredJointTorque();
 
         pos_logger.log(current_position);
         torq_logger.log(current_torque);
