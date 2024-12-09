@@ -2,6 +2,7 @@
 #define CONTROL_HPP
 
 #include <Eigen/Dense>
+#include <algorithm>  
 
 namespace kuka_control
 {
@@ -30,9 +31,12 @@ namespace kuka_control
         const double Kp_;
         const double Kd_;
         const double Kv_;
-        const double static_friction_;
-        const double dynamic_friction_;
+
+        const double k_;
+        const double lambda_;
+
         const double v_max_;
+        const double torque_max_;
 
         double q_previous_;
 
@@ -45,10 +49,17 @@ namespace kuka_control
 
     public: 
 
-        Control(const double Kp = 1, const double Kd = 0, const double Kv = 0, const double v_max = 2, const double time_tick = 0.005, const double static_friction = 0, const double dynamic_friction = 0);
+        Control(const double Kp = 1, const double Kd = 0, const double Kv = 0, const double v_max = 2, const double time_tick = 0.005);
         // std::array<double, NUM_J> clacTorque(std::array<double, NUM_J> q, std::array<double, NUM_J> q_d);
+
+        void setPreviousPos(double q);
+
         double calcTorque(double q, double q_d);
+
+        int sat(double s);
     };
+
+    int sign(double a);
 }
 
 
