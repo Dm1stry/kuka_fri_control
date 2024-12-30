@@ -28,6 +28,7 @@ set(COMPILE_TORQUE_OVERLAY ON)
 set(T_DIR examples/LBRTorqueSineOverlay)
 
 set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
+set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp_server)
 
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
@@ -56,7 +57,8 @@ set(SOURCES
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
-	${CONTROL}/control.hpp				${CONTROL}/control.cpp
+	${CONTROL}/control_one.hpp				${CONTROL}/control_one.cpp
+	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 )
 
 

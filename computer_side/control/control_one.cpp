@@ -1,6 +1,6 @@
-#include "control.hpp"
+#include "control_one.hpp"
 
-using namespace kuka_control;
+using namespace controller_one_joint;
 
 Control::Control(const double Kp, const double Kd, const double v_max, const double time_tick):
 Kp_(Kp),
@@ -12,11 +12,15 @@ torque_max_(10),
 k_(1),
 lambda_(1)
 {
-    I_h_ = 0;
-    b_h_ = 0;
-    T_h_ = 0;
+    torque_ = 0;
+    
+    I_h_ = 0.002;
+    b_h_ = 0.1;
+    T_h_ = 0.0;
+    mr_h_ = 0.0;
 
-    lambda_ = 1;
+    gamma_ = 1;
+    lambda_ = 3;
     k_ = 1;
 }
 
@@ -32,11 +36,23 @@ double Control::calcTorque(double q, double q_d)
 
     s_ = -v_ + lambda_*(q_d-q);
 
-    I_h_ += gamma_*s_*lambda_*v_;
-    b_h_ += -gamma_*v_*s_;
-    T_h_ += -gamma_*s_;
+    if (abs(q_d-q)>0.01745)
+    {
+        I_h_ += -gamma_*s_*lambda_*v_*time_tick_;
+        b_h_ += -gamma_*v_*s_*time_tick_;
+        T_h_ += 10*gamma_*s_*sign(q_d-q)*time_tick_;
+        // mr_h_ += gamma_*s_*sin(q-M_PI_4);
+    }
+    else
+    {
+        T_h_ = 0.0;
+    }
 
-    torque_ = -I_h_*lambda_*v_ - b_h_*v_ - T_h_ + k_*s_;
+    T_h_ = std::clamp(T_h_, -1., 1.);
+
+    std::cout << I_h_ << "\t" << b_h_ << "\t" << T_h_ << "\t" << mr_h_ << "\n";
+
+    torque_ = -I_h_*lambda_*v_ + b_h_*v_ + T_h_*sign(q_d-q) + mr_h_*sin(q-M_PI_4) + k_*s_;
 
     torque_ = std::clamp(torque_, -torque_max_, torque_max_);
 
@@ -49,7 +65,7 @@ int Control::sat(double s)
     else return s/0.05;
 }
 
-int kuka_control::sign(double a)
+int controller_one_joint::sign(double a)
 {
     if (a > 0.000001) return 1;
     else if (a < -0.000001) return -1;

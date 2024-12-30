@@ -3,8 +3,9 @@
 
 #include <Eigen/Dense>
 #include <algorithm>  
+#include <iostream>
 
-namespace kuka_control
+namespace controller_one_joint
 {
     constexpr int NUM_J = 7;
 
@@ -50,6 +51,7 @@ namespace kuka_control
         double I_h_;
         double b_h_;
         double T_h_;
+        double mr_h_;
 
         unsigned long count = 0;
 
