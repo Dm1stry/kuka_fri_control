@@ -7,10 +7,12 @@
 
 #include "logger/jarraylogger.hpp"
 #include "control/control_one.hpp"
+#include "control/control_full.hpp"
 #include "udp_server/udp_server.hpp"
 
 using namespace KUKA_CONTROL;
 using namespace controller_one_joint;
+using namespace controller;
 using namespace server;
 
 int main(int argc, char **argv)
@@ -45,6 +47,8 @@ int main(int argc, char **argv)
     contrololo.setPreviousPos(initial_position[6]);
 
     double q_d = 0;     // Переменная для считывания приходящих по UDP значений
+
+    Control conrt({0,0,0,0,0,0,0},0.005);
 
     // --------------------------- Инициализация логеров
 

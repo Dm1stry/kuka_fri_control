@@ -3,9 +3,16 @@
 using namespace controller;
 
 Control::Control(std_jarray v_max, const double time_tick):
-time_tick_(time_tick),
-v_max_(v_max)
+time_tick_(time_tick)
 {
+    if (v_max.size() == 7)
+    {
+        v_max_ << v_max[0], v_max[1], v_max[2], v_max[3], v_max[4], v_max[5], v_max[6];
+    }
+    else
+    {
+        v_max_ << 25, 25, 25, 25, 25, 25, 25;
+    }
     pinocchio::urdf::buildModel("robot/iiwa.urdf", model_);
     data_ = pinocchio::Data(model_);
 }
