@@ -1,5 +1,5 @@
-#ifndef CONTROL_HPP
-#define CONTROL_HPP
+#ifndef CONTROL_ONE_HPP
+#define CONTROL_ONE_HPP
 
 #include <Eigen/Dense>
 #include <algorithm>  
@@ -9,7 +9,7 @@ namespace controller_one_joint
 {
     constexpr int NUM_J = 7;
 
-    class Control
+    class ControlOne
     {
     private:
         const double time_tick_;
@@ -57,7 +57,7 @@ namespace controller_one_joint
 
     public: 
 
-        Control(const double Kp = 1, const double Kd = 0, const double v_max = 2, const double time_tick = 0.005);
+        ControlOne(const double Kp = 1, const double Kd = 0, const double v_max = 2, const double time_tick = 0.005);
         // std::array<double, NUM_J> clacTorque(std::array<double, NUM_J> q, std::array<double, NUM_J> q_d);
 
         void setPreviousPos(double q);

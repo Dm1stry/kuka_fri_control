@@ -2,7 +2,7 @@
 
 using namespace controller_one_joint;
 
-Control::Control(const double Kp, const double Kd, const double v_max, const double time_tick):
+ControlOne::ControlOne(const double Kp, const double Kd, const double v_max, const double time_tick):
 Kp_(Kp),
 Kd_(Kd),
 time_tick_(time_tick),
@@ -24,12 +24,12 @@ lambda_(1)
     k_ = 1;
 }
 
-void Control::setPreviousPos(double q)
+void ControlOne::setPreviousPos(double q)
 {
     q_previous_ = q;
 }
 
-double Control::calcTorque(double q, double q_d)
+double ControlOne::calcTorque(double q, double q_d)
 {
     v_ = (q - q_previous_)/time_tick_;
     q_previous_ = q;
@@ -59,7 +59,7 @@ double Control::calcTorque(double q, double q_d)
     return torque_;
 }
 
-int Control::sat(double s)
+int ControlOne::sat(double s)
 {
     if (std::abs(s) > 0.05) return k_*sign(s);
     else return s/0.05;

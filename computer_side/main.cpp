@@ -41,7 +41,7 @@ int main(int argc, char **argv)
 
     // --------------------------- Инициализация конторллера
 
-    Control contrololo(0, 0, 1.5, 0.005);
+    ControlOne contrololo(0, 0, 1.5, 0.005);
     contrololo.setPreviousPos(initial_position[6]);
 
     double q_d = 0;     // Переменная для считывания приходящих по UDP значений
@@ -65,8 +65,11 @@ int main(int argc, char **argv)
         // }
 
         // std::cout << "*******" << std::endl;
+
           
         server.getNumber(q_d);      // Чтение пришедших по UDP данных
+
+        // --------------------------- 
 
         current_position = kuka.getJointPosition();
         current_torque = kuka.getTorque();
@@ -76,10 +79,14 @@ int main(int argc, char **argv)
 
         initial_position[6] = current_position[6];
 
+        // --------------------------- Расчет управления
+
         last_joint_torque = contrololo.calcTorque(current_position[6], q_d);
-        // last_joint_torque = 1. * cos(delta.count()/2.5);
+
         std::cout << current_position[6]*180/M_PI << "\t" << q_d*180/M_PI << "\t" << last_joint_torque << std::endl;
         
+        // --------------------------- Задание параметров
+
         commanded_pos_logger.log(initial_position);
         commanded_torq_logger.log({0, 0, 0, 0, 0, 0, last_joint_torque});
 

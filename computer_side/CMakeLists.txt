@@ -57,7 +57,8 @@ set(SOURCES
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
-	${CONTROL}/control_one.hpp				${CONTROL}/control_one.cpp
+	${CONTROL}/control_full.hpp			${CONTROL}/control_full.cpp
+	${CONTROL}/control_one.hpp			${CONTROL}/control_one.cpp
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 )
 
@@ -65,10 +66,11 @@ set(SOURCES
 find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib REQUIRED)
 
 # Control
-find_library(OpenBLAS_LIB libopenblas NAMES libopenblas.a openblas HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
-find_library(Lapack_LIB liblapack NAMES liblapack lapack HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
-find_library(FORTRUN libgfortran.so.5 NAMES libgfortran5 gfortran gfortran5 gfortran REQUIRED)
+# find_library(OpenBLAS_LIB libopenblas NAMES libopenblas.a openblas HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
+# find_library(Lapack_LIB liblapack NAMES liblapack lapack HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
+# find_library(FORTRUN libgfortran.so.5 NAMES libgfortran5 gfortran gfortran5 gfortran REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(pinocchio REQUIRED)
 
 message("-- FRI library found in: ${FRI_LIB}")
 
@@ -93,11 +95,11 @@ target_link_libraries(${PROJECT}
 	nlohmann_json::nlohmann_json
   
   	# Control
-	${OpenBLAS_LIB}
-    ${Lapack_LIB}
-    ${FORTRUN}
+	# ${OpenBLAS_LIB}
+    # ${Lapack_LIB}
+    # ${FORTRUN}
     Eigen3::Eigen
-
+    pinocchio::pinocchio
 )
 
 target_include_directories(${PROJECT} PUBLIC
