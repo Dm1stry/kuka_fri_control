@@ -105,8 +105,6 @@ target_link_libraries(${PROJECT}
 target_include_directories(${PROJECT} PUBLIC
 	deps/include/
 	${Boost_INCLUDE_DIRS}
-
-	deps/include/control
 )
 
 if(COMPILE_JOINT_OVERLAY)

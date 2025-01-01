@@ -83,7 +83,7 @@ std_jarray Control::calcTorquePD(const std_jarray& q, const std_jarray& q_d, con
 
     clipTorque();
 
-    // ------------------------------------ Переделать + добавить клип
+    // ------------------------------------ Переделать
     std_jarray stdtorque;
 
     for (int8_t i = 0; i < torque_.size(); ++i) {
