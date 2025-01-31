@@ -28,7 +28,8 @@ set(COMPILE_TORQUE_OVERLAY ON)
 set(T_DIR examples/LBRTorqueSineOverlay)
 
 set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
-set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp_server)
+set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
+set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
 
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
@@ -60,17 +61,16 @@ set(SOURCES
 	${CONTROL}/control_full.hpp			${CONTROL}/control_full.cpp
 	${CONTROL}/control_one.hpp			${CONTROL}/control_one.cpp
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
+	${LOCKFREE}/lockfree.hpp
 )
 
 
 find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib REQUIRED)
 
 # Control
-# find_library(OpenBLAS_LIB libopenblas NAMES libopenblas.a openblas HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
-# find_library(Lapack_LIB liblapack NAMES liblapack lapack HINTS ${CMAKE_CURRENT_SOURCE_DIR}/deps/lib/control REQUIRED)
-# find_library(FORTRUN libgfortran.so.5 NAMES libgfortran5 gfortran gfortran5 gfortran REQUIRED)
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(pinocchio REQUIRED)
+find_package(nlohmann_json 3.11.3 REQUIRED)
 
 message("-- FRI library found in: ${FRI_LIB}")
 
@@ -100,6 +100,7 @@ target_link_libraries(${PROJECT}
     # ${FORTRUN}
     Eigen3::Eigen
     pinocchio::pinocchio
+    nlohmann_json::nlohmann_json
 )
 
 target_include_directories(${PROJECT} PUBLIC
