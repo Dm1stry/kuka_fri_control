@@ -4,7 +4,7 @@ sudo apt update
 
 echo "Install Eigen3 and its dependence"
 
-sudo apt install cmake libboost-dev libblas-dev liblapack-dev
+sudo apt install cmake libboost-dev libblas-dev liblapack-dev nlohmann-json3-dev
 wget https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
 gunzip eigen-3.4.0.tar.gz && tar xf eigen-3.4.0.tar
 
