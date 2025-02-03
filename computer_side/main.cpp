@@ -6,13 +6,13 @@
 #include <chrono>
 
 #include "logger/jarraylogger.hpp"
-#include "control/control_one.hpp"
-#include "control/control_full.hpp"
+// #include "control/control_one.hpp"
+// #include "control/control_full.hpp"
 #include "udp/udp_server.hpp"
 
 using namespace KUKA_CONTROL;
-using namespace controller_one_joint;
-using namespace controller;
+// using namespace controller_one_joint;
+// using namespace controller;
 using namespace server;
 
 int main(int argc, char **argv)
@@ -39,7 +39,7 @@ int main(int argc, char **argv)
     kuka.setTargetJointTorque(torque);
     kuka.start();
 
-    jarray initial_position = kuka.getJointPosition();
+    jarray initial_position = kuka.getIpoJointPosition();
     current_position = initial_position;
     
     double last_joint_torque = 0;
