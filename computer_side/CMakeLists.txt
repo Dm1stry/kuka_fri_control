@@ -56,8 +56,8 @@ set(SOURCES
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
-	${CONTROL}/control_full.hpp			${CONTROL}/control_full.cpp
-	${CONTROL}/control_one.hpp			${CONTROL}/control_one.cpp
+	# ${CONTROL}/control_full.hpp			${CONTROL}/control_full.cpp
+	# ${CONTROL}/control_one.hpp			${CONTROL}/control_one.cpp
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 	${LOCKFREE}/lockfree.hpp
 )
@@ -67,7 +67,7 @@ find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib RE
 
 # Control
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-find_package(pinocchio REQUIRED)
+# find_package(pinocchio REQUIRED)
 find_package(nlohmann_json 3.11.3 REQUIRED)
 
 message("-- FRI library found in: ${FRI_LIB}")
@@ -97,7 +97,7 @@ target_link_libraries(${PROJECT}
     # ${Lapack_LIB}
     # ${FORTRUN}
     Eigen3::Eigen
-    pinocchio::pinocchio
+    # pinocchio::pinocchio
     nlohmann_json::nlohmann_json
 )
 
