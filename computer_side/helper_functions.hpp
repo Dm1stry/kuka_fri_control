@@ -16,3 +16,11 @@ std::array<T, x> eigenArrayToStdArray(const Eigen::Array<T, x, 1>& source_array)
     std::copy(source_array.cbegin(), source_array.cend(), result.begin());
     return result;
 }
+
+template<class T, int x>
+std::array<T, x> eigenArrayToStdArray(const Eigen::Array<T, 1, x>& source_array)
+{
+    std::array<T, x> result;
+    std::copy(source_array.cbegin(), source_array.cend(), result.begin());
+    return result;
+}
