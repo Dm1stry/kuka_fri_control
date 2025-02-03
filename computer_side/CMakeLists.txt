@@ -53,6 +53,7 @@ set(SOURCES
 	customlbrclient.hpp					customlbrclient.cpp
 	kukafricontroller.hpp				kukafricontroller.cpp
 	apiserver.hpp						apiserver.cpp
+	helper_functions.hpp
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
@@ -91,7 +92,7 @@ target_link_libraries(${PROJECT}
 	${Boost_LIBRARIES}
 	Threads::Threads
 	nlohmann_json::nlohmann_json
-  
+	
   	# Control
 	# ${OpenBLAS_LIB}
     # ${Lapack_LIB}
