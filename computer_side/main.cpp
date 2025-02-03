@@ -28,22 +28,25 @@ int main(int argc, char **argv)
 
     // --------------------------- Настройки
     
-    KukaFRIController kuka(KUKA_CONTROL::TORQUE);
+    KukaFRIController kuka(KUKA_CONTROL::JOINT_POSITION);
 
     jarray current_position;
+    // jarray previous_position;
     jarray current_torque;
+
     jarray torque = {0, 0, 0, 0, 0, 0, 0};
 
     kuka.setTargetJointTorque(torque);
     kuka.start();
 
     jarray initial_position = kuka.getJointPosition();
+    current_position = initial_position;
     
     double last_joint_torque = 0;
 
     // --------------------------- Инициализация конторллера
 
-    Eigen::Array<double,7,1> q_d(initial_position);
+    Eigen::Array<double,7,1> q_d;
 
     // --------------------------- Инициализация логеров
 
@@ -56,24 +59,38 @@ int main(int argc, char **argv)
     while (true)
     {
           
-        server.getMsg(q_d);      // Чтение пришедших по UDP данных
+        // if (server.getMsg(q_d))
+        // {
+        //     current_position = {q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]};
+        //     // previous_position = current_position;
+        //     // std::cout << q_d.transpose() << std::endl;
 
+        // };      // Чтение пришедших по UDP данных
+        
+        std::cout << current_position[0] << " " <<
+        current_position[1] << " " <<
+        current_position[2] << " " <<
+        current_position[3] << " " <<
+        current_position[4] << " " <<
+        current_position[5] << " " <<
+        current_position[6] << std::endl;
         // --------------------------- 
 
-        current_position = kuka.getJointPosition();
-        current_torque = kuka.getTorque();
+        // current_position = kuka.getJointPosition();
+        // current_torque = kuka.getTorque();
 
         pos_logger.log(current_position);
 
         // --------------------------- Расчет управления
 
-        std::cout << q_d.transpose();
 
         // --------------------------- Задание параметров
 
-        commanded_pos_logger.log({q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]});
+        // commanded_pos_logger.log({q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]});
 
-        kuka.setTargetJointPosition(initial_position);
+        current_position[3] = initial_position[3] - 3*M_PI/180;
+
+        kuka.setTargetJointPosition(current_position);
 
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }

@@ -76,7 +76,7 @@ void UDPServer::run_receive()
 					&len_); 
 		buffer_[n_] = '\0';
 
-		std::cout << buffer_ << std::endl;
+		// std::cout << buffer_ << std::endl;
 
 		// -----------------------------------------------------------------------
         // ---------------------------------------------- processing received data
