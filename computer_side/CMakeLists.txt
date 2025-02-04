@@ -30,6 +30,7 @@ set(T_DIR examples/LBRTorqueSineOverlay)
 set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
 set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
 set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
+set(PLANER ${CMAKE_CURRENT_SOURCE_DIR}/planer)
 
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
@@ -61,6 +62,7 @@ set(SOURCES
 	# ${CONTROL}/control_one.hpp			${CONTROL}/control_one.cpp
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 	${LOCKFREE}/lockfree.hpp
+	${PLANER}/trajectory.hpp			${PLANER}/trajectory.cpp
 )
 
 
