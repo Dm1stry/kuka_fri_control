@@ -30,6 +30,7 @@ set(T_DIR examples/LBRTorqueSineOverlay)
 set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
 set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
 set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
+set(PLANER ${CMAKE_CURRENT_SOURCE_DIR}/planer)
 
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
@@ -51,17 +52,17 @@ set(LOGGER_SOURCES
 set(SOURCES
 	main.cpp
 	customlbrclient.hpp					customlbrclient.cpp
-	# jointpositionclient.hpp				jointpositionclient.cpp
-	# torqueclient.hpp					torqueclient.cpp
 	kukafricontroller.hpp				kukafricontroller.cpp
 	apiserver.hpp						apiserver.cpp
+	helper_functions.hpp
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
-	${CONTROL}/control_full.hpp			${CONTROL}/control_full.cpp
-	${CONTROL}/control_one.hpp			${CONTROL}/control_one.cpp
+	# ${CONTROL}/control_full.hpp			${CONTROL}/control_full.cpp
+	# ${CONTROL}/control_one.hpp			${CONTROL}/control_one.cpp
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 	${LOCKFREE}/lockfree.hpp
+	${PLANER}/trajectory.hpp			${PLANER}/trajectory.cpp
 )
 
 
@@ -69,7 +70,7 @@ find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib RE
 
 # Control
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
-find_package(pinocchio REQUIRED)
+# find_package(pinocchio REQUIRED)
 find_package(nlohmann_json 3.11.3 REQUIRED)
 
 message("-- FRI library found in: ${FRI_LIB}")
@@ -93,13 +94,13 @@ target_link_libraries(${PROJECT}
 	${Boost_LIBRARIES}
 	Threads::Threads
 	nlohmann_json::nlohmann_json
-  
+	
   	# Control
 	# ${OpenBLAS_LIB}
     # ${Lapack_LIB}
     # ${FORTRUN}
     Eigen3::Eigen
-    pinocchio::pinocchio
+    # pinocchio::pinocchio
     nlohmann_json::nlohmann_json
 )
 

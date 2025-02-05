@@ -9,7 +9,7 @@ FileLogger::FileLogger(std::string name /* = "log" */)
 
 void FileLogger::setFileName(const std::string& name)
 {
-	logger_stream_.open(name + ".txt");
+	logger_stream_.open(name + ".txt", std::ios_base::out);
 }
 
 void FileLogger::log(const std::string& message)
