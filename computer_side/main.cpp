@@ -36,28 +36,21 @@ int main(int argc, char **argv)
     jarray initial_position;
 
     Eigen::Array<double,7,1> current_point;
-    Eigen::Array<double,7,1> initial_q;
-    Eigen::Array<double,7,1> eps;
+    Eigen::Array<double,7,1> initial_point;
     Eigen::Array<double,7,1> temp;
-    double e = 1;
-    eps << e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180;
-
-    // jarray current_torque;
-    // jarray torque = {0, 0, 0, 0, 0, 0, 0};
-    // kuka.setTargetJointTorque(torque);
 
     kuka.start();
 
     initial_position = kuka.getMeasuredJointPosition();
     current_position = initial_position;
 
-    initial_q = stdArrayToEigenArray(initial_position);
-    Eigen::Array<double,7,1> next_point = initial_q + 30*M_PI/180;
-    temp = initial_q + 2*M_PI/180;
+    initial_point = stdArrayToEigenArray(initial_position);
+    Eigen::Array<double,7,1> next_point = initial_point + 20*M_PI/180;
 
-    bool done = true;
-    trajectory::Trajectory planer(initial_q);
+    trajectory::Trajectory planer(initial_point);
     planer.push(next_point);
+    planer.push(initial_point);
+
     
     // --------------------------- Инициализация логеров
 
@@ -79,36 +72,24 @@ int main(int argc, char **argv)
 
         // ========================================================================================
 
-        if (done)
+        temp = planer.calcTransferedPoint();
+
+        std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
+
+        kuka.setTargetJointPosition(eigenArrayToStdArray(temp));
+
+        current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
+
+        if (planer.getDone())
         {
-            planer.pop(next_point);
-            done = false;
-            kuka.setTargetJointPosition(eigenArrayToStdArray(next_point));
-            std::cout << planer.size() << "Done\n";
-            std::cout << "Next: " << next_point.transpose()*180/M_PI << std::endl;
+            planer.synchPosition(current_point);
         }
-        else
-        {   
-            current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
-            
-            std::cout << "Next: " << next_point.transpose()*180/M_PI << std::endl;
-            std::cout << "Current: " << current_point.transpose()*180/M_PI << std::endl;
 
-            if (trajectory::eigenArrayEqual(current_point, next_point, eps))
-            {
-                done = true;
-            }
-
-            kuka.setTargetJointPosition(eigenArrayToStdArray(next_point));
-            
-            // std::cout << temp[0]*180/M_PI << "\t"<< temp[1]*180/M_PI << "\t"<< temp[2]*180/M_PI << "\t"<< temp[3]*180/M_PI << "\t"<< temp[4]*180/M_PI << "\t"<< temp[5]*180/M_PI << "\t"<< temp[6]*180/M_PI<< "\t" << std::endl;
-        }
+        std::cout << "Current: " << current_point.transpose()*180/M_PI << std::endl;
         
         // ========================================================================================
 
-        // current_torque = kuka.getTorque();
-
-        commanded_pos_logger.log(eigenArrayToStdArray(next_point));
+        commanded_pos_logger.log(eigenArrayToStdArray(temp));
         pos_logger.log(eigenArrayToStdArray(current_point));
 
         std::this_thread::sleep_for(std::chrono::microseconds(900));

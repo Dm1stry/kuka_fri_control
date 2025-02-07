@@ -5,50 +5,29 @@ using namespace trajectory;
 Trajectory::Trajectory(const Eigen::Array<double,7,1> &first_thetta)
 {
     points_.push_back(first_thetta);
+
+    virtual_thetta_ = first_thetta;
+
+    eps_ << e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180;
 }
 
 // =======================================================================
 
 bool Trajectory::push(const Eigen::Array<double,7,1> &thetta)
 {
-    Eigen::Array<double,N_JOINTS,1> previous_thetta = points_.back();
-    Eigen::Array<double,N_JOINTS,1> delta = thetta - previous_thetta;
-
-    int n = checkPoints(delta)*points_per_delta;
-
-    if (n > 0)
-    {
-        for (int i = 1; i <= n; ++i)
-        {
-            points_.push_back(previous_thetta + delta*i/n);
-        }
-    }
-    else
-    {
-        points_.push_back(thetta);
-    }
-
-    if (done_ == true)
-    {
-        points_.pop_front();
-        done_ = false;
-    }
+    points_.push_back(thetta);
     return true;
 }
 
 bool Trajectory::pop(Eigen::Array<double,7,1> &thetta)
 {
+    if (points_.size() == 0)
+    {
+        return false;
+    }
     thetta = points_.front();
+    points_.pop_front();
 
-    if (points_.size() == 1)
-    {
-        done_ = true;
-    }
-    else
-    {
-        done_ = false;
-        points_.pop_front();
-    }
     return true;
 }
 
@@ -59,20 +38,43 @@ size_t Trajectory::size()
 
 // =======================================================================
 
-int Trajectory::checkPoints(const Eigen::Array<double,N_JOINTS,1> &delta)
+Eigen::Array<double,N_JOINTS,1> Trajectory::calcTransferedPoint()
 {
-    int n_points_max = 0;
-    int n_points = 0;
-
-    for(int i = 0; i < N_JOINTS; ++i)
+    if (done_)
     {
-        if((delta[i] >= delta_thetta)||(delta[i] <= -delta_thetta))
-        {
-            n_points = (int)(delta[i]/delta_thetta);
-            if (n_points > n_points_max) n_points_max = n_points;
-        }
+        pop(next_thetta_);
+        done_ = false;
+        std::cout << "============================DONE============================" << std::endl;
     }
-    return n_points_max;
+
+    virtual_thetta_ = virtual_thetta_ + getDelta(next_thetta_, virtual_thetta_);
+
+    done_ = trajectory::eigenArrayEqual(next_thetta_, virtual_thetta_, eps_);
+
+    return virtual_thetta_;
+} 
+
+void Trajectory::synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_thetta)
+{
+    virtual_thetta_ = measured_thetta;
+}
+
+// =======================================================================
+
+Eigen::Array<double,N_JOINTS,1> Trajectory::getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta)
+{
+    Eigen::Array<double,7,1> delta = next_thetta - current_thetta;
+
+    Eigen::Array<double,7,1> vel = v*Eigen::sign(delta);
+
+    // std::cout << vel.transpose() << std::endl;
+
+    return vel;
+}
+
+bool Trajectory::getDone()
+{
+    return done_;
 }
 
 // =======================================================================

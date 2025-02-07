@@ -3,6 +3,7 @@
 
 #include <Eigen/Dense>
 #include <list>
+#include <iostream>
 
 namespace trajectory
 {
@@ -14,16 +15,32 @@ namespace trajectory
     class Trajectory
     {
         private:
-            std::list<Eigen::Array<double,N_JOINTS,1>> points_;
-            bool done_ = false;
 
-            int checkPoints(const Eigen::Array<double,N_JOINTS,1> &delta);
+            double time_tick_ = 0.005;
+            double v = 0.0005;
+
+            const double e = 0.5;
+            Eigen::Array<double,N_JOINTS,1> eps_;
+
+            std::list<Eigen::Array<double,N_JOINTS,1>> points_;
+            bool done_ = true;
+
+            Eigen::Array<double,N_JOINTS,1> virtual_thetta_;
+            Eigen::Array<double,N_JOINTS,1> next_thetta_;
+
+            Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
+
 
         public:
             Trajectory(const Eigen::Array<double,N_JOINTS,1> &first_thetta);
 
             bool push(const Eigen::Array<double,N_JOINTS,1> &thetta);
             bool pop(Eigen::Array<double,N_JOINTS,1> &thetta);
+
+            void synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_thetta);
+            Eigen::Array<double,N_JOINTS,1> calcTransferedPoint();
+
+            bool getDone();
 
             size_t size();
 
