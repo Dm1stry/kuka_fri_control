@@ -17,7 +17,7 @@ namespace trajectory
         private:
 
             double time_tick_ = 0.005;
-            double v = 0.0005;
+            double v = 0.01;
 
             const double e = 0.5;
             Eigen::Array<double,N_JOINTS,1> eps_;
@@ -28,14 +28,13 @@ namespace trajectory
             Eigen::Array<double,N_JOINTS,1> virtual_thetta_;
             Eigen::Array<double,N_JOINTS,1> next_thetta_;
 
-            Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
-
-
         public:
             Trajectory(const Eigen::Array<double,N_JOINTS,1> &first_thetta);
 
             bool push(const Eigen::Array<double,N_JOINTS,1> &thetta);
             bool pop(Eigen::Array<double,N_JOINTS,1> &thetta);
+
+            Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta, const Eigen::Array<double,N_JOINTS,1> &eps);
 
             void synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_thetta);
             Eigen::Array<double,N_JOINTS,1> calcTransferedPoint();
@@ -47,7 +46,7 @@ namespace trajectory
     };
 
     bool eigenArrayEqual(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &eps);
-
+    bool eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &diff);
 }
 
 #endif

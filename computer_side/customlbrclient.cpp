@@ -86,7 +86,7 @@ void CustomLBRClient::command()
     std::memcpy(last_external_joint_torque_.data(), robotState().getExternalTorque(), LBRState::NUMBER_OF_JOINTS * sizeof(double));
 
     measured_joint_position_queue_->push(last_measured_joint_position_);
-    commanding_joint_position_queue_->push(last_commanded_joint_position_);
+    commanded_joint_position_queue_->push(last_commanded_joint_position_);
     ipo_joint_position_queue_->push(last_ipo_joint_position_);
 
     measured_joint_torque_queue_->push(last_measured_joint_torque_);

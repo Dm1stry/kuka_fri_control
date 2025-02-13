@@ -44,10 +44,9 @@ Eigen::Array<double,N_JOINTS,1> Trajectory::calcTransferedPoint()
     {
         pop(next_thetta_);
         done_ = false;
-        std::cout << "============================DONE============================" << std::endl;
     }
 
-    virtual_thetta_ = virtual_thetta_ + getDelta(next_thetta_, virtual_thetta_);
+    virtual_thetta_ = virtual_thetta_ + getDelta(next_thetta_, virtual_thetta_, eps_);
 
     done_ = trajectory::eigenArrayEqual(next_thetta_, virtual_thetta_, eps_);
 
@@ -61,9 +60,17 @@ void Trajectory::synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_t
 
 // =======================================================================
 
-Eigen::Array<double,N_JOINTS,1> Trajectory::getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta)
+Eigen::Array<double,N_JOINTS,1> Trajectory::getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta, const Eigen::Array<double,N_JOINTS,1> &eps)
 {
     Eigen::Array<double,7,1> delta = next_thetta - current_thetta;
+
+    for(int i = 0; i < N_JOINTS; ++i)
+    {
+        if(std::abs(delta[i]) < eps[i]) 
+        {
+            delta[i] = 0.;
+        }
+    }
 
     Eigen::Array<double,7,1> vel = v*Eigen::sign(delta);
 
@@ -89,4 +96,16 @@ bool trajectory::eigenArrayEqual(const Eigen::Array<double,N_JOINTS,1> &arr1, co
         }
     }
     return true;
+}
+
+bool trajectory::eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &diff)
+{
+    for(int i = 0; i < N_JOINTS; ++i)
+    {
+        if(std::abs(arr1[i]-arr2[i]) > diff[i]) 
+        {
+            return true;
+        }
+    }
+    return false;
 }
