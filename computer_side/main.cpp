@@ -68,7 +68,7 @@ int main(int argc, char **argv)
     planer.push(initial_point+21*M_PI/180);
     // planer.push(next_point+30*M_PI/180);
 
-    clock_t t;
+    // clock_t t;
     
     // --------------------------- Инициализация логеров
 
@@ -89,13 +89,13 @@ int main(int argc, char **argv)
 
         // ========================================================================================
 
-        t = clock();
+        // t = clock();
 
         current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
 
         // std::cout << "Current: " << current_point.transpose()*180/M_PI << std::endl;
 
-        std::cout << "Время: " << ((double)(clock() - t))/CLOCKS_PER_SEC*1000 << std::endl;
+        // std::cout << "Время: " << ((double)(clock() - t))/CLOCKS_PER_SEC*1000 << std::endl;
 
         if (done)
         {
