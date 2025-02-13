@@ -34,6 +34,8 @@ int main(int argc, char **argv)
     Eigen::Array<double,7,1> current_point;
     Eigen::Array<double,7,1> initial_point;
     Eigen::Array<double,7,1> temp;
+    Eigen::Array<double,7,1> delta;
+    Eigen::Array<double,7,1> msg_thetta; 
 
     const double e = 0.5*M_PI/180;
     const double df = 5*M_PI/180;
@@ -59,14 +61,16 @@ int main(int argc, char **argv)
 
     trajectory::Trajectory planer(initial_point);
     // planer.push(next_point);
-    planer.push(initial_point+3*M_PI/180);
-    planer.push(initial_point+6*M_PI/180);
-    planer.push(initial_point+9*M_PI/180);
-    planer.push(initial_point+12*M_PI/180);
-    planer.push(initial_point+15*M_PI/180);
-    planer.push(initial_point+18*M_PI/180);
-    planer.push(initial_point+21*M_PI/180);
-    // planer.push(next_point+30*M_PI/180);
+    // planer.push(initial_point+3*M_PI/180);
+    // planer.push(initial_point+6*M_PI/180);
+    // planer.push(initial_point+9*M_PI/180);
+    // planer.push(initial_point+12*M_PI/180);
+    // planer.push(initial_point+15*M_PI/180);
+    // planer.push(initial_point+18*M_PI/180);
+    // planer.push(initial_point+21*M_PI/180);
+    // planer.push(initial_point+30*M_PI/180);
+    // planer.push(initial_point);
+
 
     // clock_t t;
     
@@ -74,18 +78,21 @@ int main(int argc, char **argv)
 
     LOGGER::JArrayLogger pos_logger("actual_position");
     LOGGER::JArrayLogger commanded_pos_logger("commanded_position");
+    LOGGER::JArrayLogger delta_pos_logger("delta_position");
 
     server.start();
 
     while (true)
     {
-        // if (server.getMsg(q_d))
-        // {
-        //     current_position = {q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]};
-        //     // previous_position = current_position;
-        //     // std::cout << q_d.transpose() << std::endl;
+        if (server.getMsg(msg_thetta))
+        {
+            // current_position = {q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]};
+            // previous_position = current_position;
+            // std::cout << q_d.transpose() << std::endl;
+            planer.push(msg_thetta);
+            // std::cout << msg_thetta.transpose() << std::endl;
 
-        // };      // Чтение пришедших по UDP данных
+        };      // Чтение пришедших по UDP данных
 
         // ========================================================================================
 
@@ -93,7 +100,7 @@ int main(int argc, char **argv)
 
         current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
 
-        // std::cout << "Current: " << current_point.transpose()*180/M_PI << std::endl;
+        std::cout << "Current: " << current_point.transpose()*180/M_PI << std::endl;
 
         // std::cout << "Время: " << ((double)(clock() - t))/CLOCKS_PER_SEC*1000 << std::endl;
 
@@ -104,14 +111,15 @@ int main(int argc, char **argv)
         }
         else
         {
-            temp = stdArrayToEigenArray(kuka.getCommandedJointPosition());
+            // temp = stdArrayToEigenArray(kuka.getCommandedJointPosition());
 
             if (!trajectory::eigenArrayDiff(temp,current_point,diff))
             {
-                temp = temp + planer.getDelta(next_point, temp, eps);
+                delta = planer.getDelta(next_point, temp, eps);
+                temp = temp + delta;
             }
 
-            // std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
+            std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
 
             kuka.setTargetJointPosition(eigenArrayToStdArray(temp));
 
@@ -126,6 +134,7 @@ int main(int argc, char **argv)
 
         commanded_pos_logger.log(eigenArrayToStdArray(temp));
         pos_logger.log(eigenArrayToStdArray(current_point));
+        delta_pos_logger.log(eigenArrayToStdArray(delta));
 
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }

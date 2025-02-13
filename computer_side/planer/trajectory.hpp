@@ -17,7 +17,7 @@ namespace trajectory
         private:
 
             double time_tick_ = 0.005;
-            double v = 0.01;
+            double v = 0.001;
 
             const double e = 0.5;
             Eigen::Array<double,N_JOINTS,1> eps_;
