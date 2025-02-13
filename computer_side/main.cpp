@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     current_position = initial_position;
 
     initial_point = stdArrayToEigenArray(initial_position);
-    Eigen::Array<double,7,1> next_point = initial_point + 20*M_PI/180;
+    Eigen::Array<double,7,1> next_point = initial_point;
     temp = initial_point;
 
     trajectory::Trajectory planer(initial_point);
@@ -84,13 +84,14 @@ int main(int argc, char **argv)
 
     while (true)
     {
-        if (server.getMsg(msg_thetta))
+        if (server.getMsg(next_point))
         {
             // current_position = {q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]};
             // previous_position = current_position;
             // std::cout << q_d.transpose() << std::endl;
-            planer.push(msg_thetta);
-            // std::cout << msg_thetta.transpose() << std::endl;
+            // planer.push(msg_thetta);
+              
+            std::cout << next_point.transpose() << std::endl;
 
         };      // Чтение пришедших по UDP данных
 
@@ -104,7 +105,7 @@ int main(int argc, char **argv)
 
         // std::cout << "Время: " << ((double)(clock() - t))/CLOCKS_PER_SEC*1000 << std::endl;
 
-        if (done)
+        if (false)
         {
             done = !(planer.pop(next_point));
             // std::cout << "POP" << done << std::endl;
