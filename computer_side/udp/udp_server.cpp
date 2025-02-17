@@ -7,7 +7,8 @@ server_ip_(server_ip),
 server_port_(server_port),
 client_ip_(client_ip),
 client_port_(client_port),
-reciev_buffer_(1024)
+reciev_buffer_(1024),
+transmit_buffer_(1024)
 {
     
 }
@@ -109,18 +110,13 @@ void UDPServer::run_transmit()
 			// ------------------------------------------- processing transmitted data
 			// -----------------------------------------------------------------------
 
-			// if (transmit_buffer_.pop(thetta_msg_))
-			// {
-			// 	// std::cout << "AAAAAAAAAAAAAA" << thetta_msg_ << std::endl;
-			// 	// ch = server::eigenArrayToJson(thetta_msg_).dump().c_str();
-			// 	// std::cout << "AAAAAAAAAAAAAA" << server::eigenArrayToJson(thetta_msg_).dump().c_str() << std::endl;
-
-
-			// 	// REWRITE
+			if (transmit_buffer_.pop(torque_msg_))
+			{
+				// REWRITE
 				
-			//  sendto(sockfd_, server::eigenArrayToJson(thetta_msg_).dump().c_str(), strlen(server::eigenArrayToJson(thetta_msg_).dump().c_str()), MSG_CONFIRM, (const struct sockaddr *) &cliaddr_, sizeof(cliaddr_)); 
-			// 	msg_ready_ = false;
-			// }
+				sendto(sockfd_, server::eigenArrayToJson(torque_msg_).dump().c_str(), strlen(server::eigenArrayToJson(torque_msg_).dump().c_str()), MSG_CONFIRM, (const struct sockaddr *) &cliaddr_, sizeof(cliaddr_)); 
+				msg_ready_ = false;
+			}
 		}
 	}
 }
@@ -138,9 +134,9 @@ bool UDPServer::getMsg(Eigen::Array<double,7,1> &thetta)
 	return reciev_buffer_.pop(thetta);
 }
 
-bool UDPServer::setMsg()
+bool UDPServer::setMsg(Eigen::Array<double,14,1> &torque)
 {
-
+	msg_ready_ = transmit_buffer_.push(torque);
 	return true;
 }
 

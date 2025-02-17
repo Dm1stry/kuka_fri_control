@@ -37,6 +37,9 @@ int main(int argc, char **argv)
     Eigen::Array<double,7,1> delta;
     Eigen::Array<double,7,1> msg_thetta; 
 
+    Eigen::Array<double,7,1> current_torque; 
+    Eigen::Array<double,14,1> msg_torque; 
+
     const double e = 0.5*M_PI/180;
     const double df = 5*M_PI/180;
 
@@ -120,18 +123,26 @@ int main(int argc, char **argv)
                 temp = temp + delta;
             }
 
-            std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
+            // std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
 
             kuka.setTargetJointPosition(eigenArrayToStdArray(temp));
 
             if (trajectory::eigenArrayEqual(temp,next_point,eps))
             {
                 done = true;
-                std::cout << "============================DONE============================" << std::endl;
+                // std::cout << "============================DONE============================" << std::endl;
             }
         }
         
         // ========================================================================================
+
+        current_torque = stdArrayToEigenArray(kuka.getExternalJointTorque());
+
+        std::cout << "Torque: " << current_torque.transpose() << std::endl;
+
+        msg_torque << current_point, current_torque;
+
+        server.setMsg(msg_torque);
 
         commanded_pos_logger.log(eigenArrayToStdArray(temp));
         pos_logger.log(eigenArrayToStdArray(current_point));
