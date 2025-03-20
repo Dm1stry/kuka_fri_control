@@ -17,9 +17,9 @@ namespace trajectory
         private:
 
             double time_tick_ = 0.005;
-            double v = 0.001;
+            double v = 0.002;
 
-            const double e = 0.5;
+            const double e = 0.1;
             Eigen::Array<double,N_JOINTS,1> eps_;
 
             std::list<Eigen::Array<double,N_JOINTS,1>> points_;

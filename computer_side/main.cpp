@@ -40,7 +40,7 @@ int main(int argc, char **argv)
     Eigen::Array<double,7,1> current_torque; 
     Eigen::Array<double,14,1> msg_torque; 
 
-    const double e = 0.5*M_PI/180;
+    const double e = 0.1*M_PI/180;
     const double df = 5*M_PI/180;
 
     Eigen::Array<double,7,1> eps;
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     // planer.push(initial_point+9*M_PI/180);
     // planer.push(initial_point+12*M_PI/180);
     // planer.push(initial_point+15*M_PI/180);
-    // planer.push(initial_point+18*M_PI/180);
+    // planer.push(initial_point+30*M_PI/180);
     // planer.push(initial_point+21*M_PI/180);
     // planer.push(initial_point+30*M_PI/180);
     // planer.push(initial_point);
@@ -101,6 +101,8 @@ int main(int argc, char **argv)
         // ========================================================================================
 
         // t = clock();
+
+        // planer.pop(next_point);
 
         current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
 
