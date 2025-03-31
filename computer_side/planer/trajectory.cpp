@@ -109,3 +109,29 @@ bool trajectory::eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, con
     }
     return false;
 }
+
+void trajectory::setConnection()
+{
+    const char* name = "/my_shm";
+
+    int shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open");
+        return;
+    }
+
+    ftruncate(shm_fd, sizeof(bool));
+
+    bool* ptr = (bool*)mmap(0, sizeof(bool), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap");
+        return;
+    }
+
+    // const char* message = "Привет от первого процесса!";
+    // std::memcpy(ptr, message, strlen(message) + 1);
+    *ptr = true;
+
+    munmap(ptr, sizeof(bool));
+    close(shm_fd);
+}

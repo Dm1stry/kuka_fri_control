@@ -5,6 +5,11 @@
 #include <list>
 #include <iostream>
 
+#include <iostream>
+#include <fcntl.h>      // shm_open
+#include <sys/mman.h>   // mmap, PROT_*, MAP_*
+#include <unistd.h>     // ftruncate, close
+
 namespace trajectory
 {
     const int N_JOINTS = 7;
@@ -47,6 +52,8 @@ namespace trajectory
 
     bool eigenArrayEqual(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &eps);
     bool eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &diff);
+
+    void setConnection();
 }
 
 #endif

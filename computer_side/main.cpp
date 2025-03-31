@@ -4,6 +4,7 @@
 #include <iostream>
 #include <iomanip>
 #include <chrono>
+#include <fstream>
 
 #include "logger/jarraylogger.hpp"
 #include "udp/udp_server.hpp"
@@ -83,7 +84,16 @@ int main(int argc, char **argv)
     LOGGER::JArrayLogger commanded_pos_logger("commanded_position");
     LOGGER::JArrayLogger delta_pos_logger("delta_position");
 
+    std::ofstream ofs;
+    ofs.open("data.csv", std::ofstream::out);
+    ofs << "t" << "," << "Q1" << "," << "Q2" << "," << "Q3" << ","
+            << "Q4" << "," << "Q5" << "," << "Q6" << "," << "Q7" << "\n";
+
     server.start();
+
+    trajectory::setConnection();
+
+    std::cout << "Старт" << std::endl;
 
     while (true)
     {
@@ -93,7 +103,8 @@ int main(int argc, char **argv)
             // previous_position = current_position;
             // std::cout << q_d.transpose() << std::endl;
             // planer.push(msg_thetta);
-              
+            ofs << "t" << "," << "Q1" << "," << "Q2" << "," << "Q3" << ","
+                << "Q4" << "," << "Q5" << "," << "Q6" << "," << "Q7" << "\n";          
             std::cout << next_point.transpose() << std::endl;
 
         };      // Чтение пришедших по UDP данных
