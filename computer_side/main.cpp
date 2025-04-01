@@ -91,7 +91,7 @@ int main(int argc, char **argv)
 
     server.start();
 
-    trajectory::setConnection();
+    trajectory::waitConnection();
 
     std::cout << "Старт" << std::endl;
 

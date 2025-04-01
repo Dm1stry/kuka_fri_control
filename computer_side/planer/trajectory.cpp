@@ -110,10 +110,9 @@ bool trajectory::eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, con
     return false;
 }
 
-void trajectory::setConnection()
+void trajectory::waitConnection()
 {
     const char* name = "/my_shm";
-
     int shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1) {
         perror("shm_open");
@@ -128,10 +127,30 @@ void trajectory::setConnection()
         return;
     }
 
-    // const char* message = "Привет от первого процесса!";
+    // const char* message = "Временно";
     // std::memcpy(ptr, message, strlen(message) + 1);
-    *ptr = true;
+    *ptr = false;
+
+    ptr = (bool*)mmap(0, sizeof(bool), PROT_READ, MAP_SHARED, shm_fd, 0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap");
+        return;
+    }
+
+    std::cout << "Ожидание..." << std::endl;
+
+    while(1)
+    {
+        std::cout << *(static_cast<bool*>(ptr)) << std::endl;
+        if (*(static_cast<bool*>(ptr)))
+        {
+            break;
+        }
+    }
+
+    std::cout << "Начало" << std::endl;
 
     munmap(ptr, sizeof(bool));
     close(shm_fd);
+    shm_unlink(name);
 }
