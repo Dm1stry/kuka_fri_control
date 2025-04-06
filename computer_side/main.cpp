@@ -1,4 +1,4 @@
-#include "kukafricontroller.hpp"
+#include "kukafri/kukafricontroller.hpp"
 #include <cmath>
 #include <thread>
 #include <iostream>
@@ -9,7 +9,7 @@
 #include "logger/jarraylogger.hpp"
 #include "udp/udp_server.hpp"
 #include "planer/trajectory.hpp"
-#include "helper_functions.hpp"
+#include "kukafri/helper_functions.hpp"
 
 using namespace KUKA_CONTROL;
 using namespace server;
@@ -52,6 +52,8 @@ int main(int argc, char **argv)
 
     bool done = true;
 
+    // trajectory::waitConnection();
+
     kuka.start();
 
     initial_position = kuka.getMeasuredJointPosition();
@@ -64,34 +66,15 @@ int main(int argc, char **argv)
     temp = initial_point;
 
     trajectory::Trajectory planer(initial_point);
-    // planer.push(next_point);
-    // planer.push(initial_point+3*M_PI/180);
-    // planer.push(initial_point+6*M_PI/180);
-    // planer.push(initial_point+9*M_PI/180);
-    // planer.push(initial_point+12*M_PI/180);
-    // planer.push(initial_point+15*M_PI/180);
-    // planer.push(initial_point+30*M_PI/180);
-    // planer.push(initial_point+21*M_PI/180);
-    // planer.push(initial_point+30*M_PI/180);
-    // planer.push(initial_point);
-
-
-    // clock_t t;
     
     // --------------------------- Инициализация логеров
 
-    LOGGER::JArrayLogger pos_logger("actual_position");
-    LOGGER::JArrayLogger commanded_pos_logger("commanded_position");
-    LOGGER::JArrayLogger delta_pos_logger("delta_position");
-
-    std::ofstream ofs;
-    ofs.open("data.csv", std::ofstream::out);
-    ofs << "t" << "," << "Q1" << "," << "Q2" << "," << "Q3" << ","
-            << "Q4" << "," << "Q5" << "," << "Q6" << "," << "Q7" << "\n";
+    // LOGGER::JArrayLogger pos_logger("actual_position");
+    // LOGGER::JArrayLogger commanded_pos_logger("commanded_position");
+    // LOGGER::JArrayLogger delta_pos_logger("delta_position");
 
     server.start();
 
-    trajectory::waitConnection();
 
     std::cout << "Старт" << std::endl;
 
@@ -102,9 +85,7 @@ int main(int argc, char **argv)
             // current_position = {q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]};
             // previous_position = current_position;
             // std::cout << q_d.transpose() << std::endl;
-            // planer.push(msg_thetta);
-            ofs << "t" << "," << "Q1" << "," << "Q2" << "," << "Q3" << ","
-                << "Q4" << "," << "Q5" << "," << "Q6" << "," << "Q7" << "\n";          
+            // planer.push(msg_thetta);          
             std::cout << next_point.transpose() << std::endl;
 
         };      // Чтение пришедших по UDP данных
@@ -157,9 +138,9 @@ int main(int argc, char **argv)
 
         server.setMsg(msg_torque);
 
-        commanded_pos_logger.log(eigenArrayToStdArray(temp));
-        pos_logger.log(eigenArrayToStdArray(current_point));
-        delta_pos_logger.log(eigenArrayToStdArray(delta));
+        // commanded_pos_logger.log(eigenArrayToStdArray(temp));
+        // pos_logger.log(eigenArrayToStdArray(current_point));
+        // delta_pos_logger.log(eigenArrayToStdArray(delta));
 
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }
