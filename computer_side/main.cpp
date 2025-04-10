@@ -75,7 +75,6 @@ int main(int argc, char **argv)
 
     server.start();
 
-
     std::cout << "Старт" << std::endl;
 
     while (true)
@@ -91,10 +90,6 @@ int main(int argc, char **argv)
         };      // Чтение пришедших по UDP данных
 
         // ========================================================================================
-
-        // t = clock();
-
-        // planer.pop(next_point);
 
         current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
 
@@ -113,7 +108,7 @@ int main(int argc, char **argv)
 
             if (!trajectory::eigenArrayDiff(temp,current_point,diff))
             {
-                delta = planer.getDelta(next_point, temp, eps);
+                delta = planer.getDelta(next_point, temp);
                 temp = temp + delta;
             }
 

@@ -22,10 +22,14 @@ namespace trajectory
         private:
 
             double time_tick_ = 0.005;
-            double v = 0.002;
+            double v_min_ = 0.001;
+            double v_max_ = 0.002;
 
-            const double e = 0.1;
-            Eigen::Array<double,N_JOINTS,1> eps_;
+            const double e_min_ = 0.05*M_PI/180;
+            const double e_max_ = 0.1*M_PI/180;
+
+            Eigen::Array<double,N_JOINTS,1> eps_min_;
+            Eigen::Array<double,N_JOINTS,1> eps_max_;
 
             std::list<Eigen::Array<double,N_JOINTS,1>> points_;
             bool done_ = true;
@@ -39,7 +43,7 @@ namespace trajectory
             bool push(const Eigen::Array<double,N_JOINTS,1> &thetta);
             bool pop(Eigen::Array<double,N_JOINTS,1> &thetta);
 
-            Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta, const Eigen::Array<double,N_JOINTS,1> &eps);
+            Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
 
             void synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_thetta);
             Eigen::Array<double,N_JOINTS,1> calcTransferedPoint();

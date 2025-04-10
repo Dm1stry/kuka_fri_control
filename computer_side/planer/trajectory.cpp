@@ -8,7 +8,8 @@ Trajectory::Trajectory(const Eigen::Array<double,7,1> &first_thetta)
 
     virtual_thetta_ = first_thetta;
 
-    eps_ << e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180, e*M_PI/180;
+    eps_max_ << e_max_, e_max_, e_max_, e_max_, e_max_, e_max_, e_max_;
+    eps_min_ << e_min_, e_min_, e_min_, e_min_, e_min_, e_min_, e_min_;
 }
 
 // =======================================================================
@@ -46,9 +47,9 @@ Eigen::Array<double,N_JOINTS,1> Trajectory::calcTransferedPoint()
         done_ = false;
     }
 
-    virtual_thetta_ = virtual_thetta_ + getDelta(next_thetta_, virtual_thetta_, eps_);
+    virtual_thetta_ = virtual_thetta_ + getDelta(next_thetta_, virtual_thetta_);
 
-    done_ = trajectory::eigenArrayEqual(next_thetta_, virtual_thetta_, eps_);
+    done_ = trajectory::eigenArrayEqual(next_thetta_, virtual_thetta_, eps_min_);
 
     return virtual_thetta_;
 } 
@@ -60,19 +61,40 @@ void Trajectory::synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_t
 
 // =======================================================================
 
-Eigen::Array<double,N_JOINTS,1> Trajectory::getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta, const Eigen::Array<double,N_JOINTS,1> &eps)
+Eigen::Array<double,N_JOINTS,1> Trajectory::getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta)
 {
     Eigen::Array<double,7,1> delta = next_thetta - current_thetta;
+    Eigen::Array<double,7,1> vel;
 
     for(int i = 0; i < N_JOINTS; ++i)
     {
-        if(std::abs(delta[i]) < eps[i]) 
+        if(std::abs(delta[i]) <= eps_min_[i]) 
         {
-            delta[i] = 0.;
+            vel[i] = 0.;
         }
+        else if(std::abs(delta[i]) < eps_max_[i])
+        {
+            vel[i] = v_min_ + (v_max_-v_min_)*(delta[i]-eps_min_[i]);
+        }
+        else
+        {
+            if (delta[i] > 0)
+            {
+                vel[i] = v_max_;
+            }
+            else if (delta[i] < 0)
+            {
+                vel[i] = -v_max_;
+            }
+            else 
+            {
+                vel[i] = 0;
+            }
+        }
+
     }
 
-    Eigen::Array<double,7,1> vel = v*Eigen::sign(delta);
+    // Eigen::Array<double,7,1> vel = v*Eigen::sign(delta);
 
     // std::cout << vel.transpose() << std::endl;
 
