@@ -21,6 +21,23 @@ sudo apt install -y libboost-dev nlohmann-json3-dev libeigen3-dev cmake
 ```
 
 ## How to use
+### Build
+```bash
+mkdir computer_side/build  \ 
+cd computer_side/build     \
+cmake ..                   \
+cmake --build . --parallel
+```
+### Run
+
+From build folder:
+1. Set IP on manipulator
+2. Start controlling program (control program must be on localhost:1245 and this one would be on localhost:1246)
+3. Start compiled program
+```bash
+./FRI_control
+```
+
 
 ## Hardware
 - Kuka LBR IIWA 7
