@@ -60,7 +60,8 @@ namespace server
         // ------------------------------------------------- type transmitted data
 		// -----------------------------------------------------------------------
 
-        // ring_buffer<Eigen::Array<double, 7,1>> transmit_buffer_;
+        ring_buffer<Eigen::Array<double, 14,1>> transmit_buffer_;
+        Eigen::Array<double, 14,1> torque_msg_;
         
 		// -----------------------------------------------------------------------
         
@@ -76,7 +77,7 @@ namespace server
         void stop();
 
         bool getMsg(Eigen::Array<double,7,1> &thetta);
-        bool setMsg();
+        bool setMsg(Eigen::Array<double,14,1> &torque);
     };
 
     json eigenArrayToJson(const Eigen::ArrayXd& array);

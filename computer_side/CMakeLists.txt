@@ -31,6 +31,7 @@ set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
 set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
 set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
 set(PLANER ${CMAKE_CURRENT_SOURCE_DIR}/planer)
+set(KUKAFRI ${CMAKE_CURRENT_SOURCE_DIR}/kukafri)
 
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
@@ -51,10 +52,10 @@ set(LOGGER_SOURCES
 
 set(SOURCES
 	main.cpp
-	customlbrclient.hpp					customlbrclient.cpp
-	kukafricontroller.hpp				kukafricontroller.cpp
-	apiserver.hpp						apiserver.cpp
-	helper_functions.hpp
+	${KUKAFRI}/customlbrclient.hpp			${KUKAFRI}/customlbrclient.cpp
+	${KUKAFRI}/kukafricontroller.hpp		${KUKAFRI}/kukafricontroller.cpp
+	${KUKAFRI}/apiserver.hpp				${KUKAFRI}/apiserver.cpp
+	${KUKAFRI}/helper_functions.hpp
 
 	${LOGGER_SOURCES}
 	# Сюда сорцы
