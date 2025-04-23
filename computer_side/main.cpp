@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 
     std::cout << "Hello!\n";
 
-    UDPServer server("127.0.0.1", 8081, "127.0.0.1", 8080);
+    UDPServer<7,14> server("127.0.0.1", 8081, "127.0.0.1", 8080);
 
     std::cout << "Goodbye!\n";
 

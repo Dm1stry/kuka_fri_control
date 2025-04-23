@@ -135,7 +135,7 @@ bool trajectory::eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, con
 void trajectory::waitConnection()
 {
     std::cout << "alla" << std::endl;
-    const char* name = "/my_shm";
+    const char* name = "/my_shm1";
     int shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1) {
         perror("shm_open");
