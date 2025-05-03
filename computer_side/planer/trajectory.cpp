@@ -39,28 +39,6 @@ size_t Trajectory::size()
 
 // =======================================================================
 
-Eigen::Array<double,N_JOINTS,1> Trajectory::calcTransferedPoint()
-{
-    if (done_)
-    {
-        pop(next_thetta_);
-        done_ = false;
-    }
-
-    virtual_thetta_ = virtual_thetta_ + getDelta(next_thetta_, virtual_thetta_);
-
-    done_ = trajectory::eigenArrayEqual(next_thetta_, virtual_thetta_, eps_min_);
-
-    return virtual_thetta_;
-} 
-
-void Trajectory::synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_thetta)
-{
-    virtual_thetta_ = measured_thetta;
-}
-
-// =======================================================================
-
 Eigen::Array<double,N_JOINTS,1> Trajectory::getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta)
 {
     Eigen::Array<double,7,1> delta = next_thetta - current_thetta;
