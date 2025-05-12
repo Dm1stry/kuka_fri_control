@@ -21,7 +21,7 @@ int main(int argc, char **argv)
 
     std::cout << "Hello!\n";
 
-    UDPServer server("127.0.0.1", 8081, "127.0.0.1", 8080);
+    UDPServer<7,14> server("127.0.0.1", 8081, "127.0.0.1", 8080);
 
     std::cout << "Goodbye!\n";
 
@@ -36,7 +36,9 @@ int main(int argc, char **argv)
     Eigen::Array<double,7,1> initial_point;
     Eigen::Array<double,7,1> temp;
     Eigen::Array<double,7,1> delta;
-    Eigen::Array<double,7,1> msg_thetta; 
+    Eigen::Array<double,7,1> next_point;
+    
+    int n_t = 0;
 
     Eigen::Array<double,7,1> current_torque; 
     Eigen::Array<double,14,1> msg_torque; 
@@ -50,8 +52,6 @@ int main(int argc, char **argv)
     eps << e, e, e, e, e, e, e;
     diff << df, df, df, df, df, df, df;
 
-    bool done = true;
-
     // trajectory::waitConnection();
 
     kuka.start();
@@ -60,9 +60,8 @@ int main(int argc, char **argv)
     kuka.setTargetJointPosition(initial_position);
 
     current_position = initial_position;
-
     initial_point = stdArrayToEigenArray(initial_position);
-    Eigen::Array<double,7,1> next_point = initial_point;
+    next_point = initial_point;
     temp = initial_point;
 
     trajectory::Trajectory planer(initial_point);
@@ -79,57 +78,41 @@ int main(int argc, char **argv)
 
     while (true)
     {
-        if (server.getMsg(next_point))
+        if (server.getMsg(next_point))  // Чтение пришедших по UDP данных
         {
-            // current_position = {q_d[0],q_d[1],q_d[2],q_d[3],q_d[4],q_d[5],q_d[6]};
-            // previous_position = current_position;
-            // std::cout << q_d.transpose() << std::endl;
-            // planer.push(msg_thetta);          
+            
             std::cout << next_point.transpose() << std::endl;
-
-        };      // Чтение пришедших по UDP данных
+            // planer.push(msg_thetta);          
+        };
 
         // ========================================================================================
 
         current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
 
-        std::cout << "Current: " << current_point.transpose()*180/M_PI << std::endl;
+        std::cout << "Thetta: " << current_point.transpose()*180/M_PI << std::endl;
 
-        // std::cout << "Время: " << ((double)(clock() - t))/CLOCKS_PER_SEC*1000 << std::endl;
-
-        if (false)
+        if (!trajectory::eigenArrayDiff(temp,current_point,diff))
         {
-            done = !(planer.pop(next_point));
-            // std::cout << "POP" << done << std::endl;
+            delta = planer.getDelta(next_point, temp);
+            temp = temp + delta;
         }
-        else
+
+        // std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
+
+        kuka.setTargetJointPosition(eigenArrayToStdArray(temp));
+
+        if (trajectory::eigenArrayEqual(temp,next_point,eps))
         {
-            // temp = stdArrayToEigenArray(kuka.getCommandedJointPosition());
-
-            if (!trajectory::eigenArrayDiff(temp,current_point,diff))
-            {
-                delta = planer.getDelta(next_point, temp);
-                temp = temp + delta;
-            }
-
-            // std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
-
-            kuka.setTargetJointPosition(eigenArrayToStdArray(temp));
-
-            if (trajectory::eigenArrayEqual(temp,next_point,eps))
-            {
-                done = true;
-                // std::cout << "============================DONE============================" << std::endl;
-            }
+            std::cout << "============================DONE============================" << std::endl;
         }
-        
+
         // ========================================================================================
 
         current_torque = stdArrayToEigenArray(kuka.getExternalJointTorque());
 
         std::cout << "Torque: " << current_torque.transpose() << std::endl;
 
-        msg_torque << current_point, current_torque;
+        msg_torque << 0, current_point, current_torque;
 
         server.setMsg(msg_torque);
 

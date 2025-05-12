@@ -45,9 +45,6 @@ namespace trajectory
 
             Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
 
-            void synchPosition(const Eigen::Array<double,N_JOINTS,1> &measured_thetta);
-            Eigen::Array<double,N_JOINTS,1> calcTransferedPoint();
-
             bool getDone();
 
             size_t size();
