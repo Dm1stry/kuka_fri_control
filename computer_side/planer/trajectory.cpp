@@ -52,7 +52,7 @@ Eigen::Array<double,N_JOINTS,1> Trajectory::getDelta(const Eigen::Array<double,N
         }
         else if(std::abs(delta[i]) < eps_max_[i])
         {
-            vel[i] = v_min_ + (v_max_-v_min_)*(delta[i]-eps_min_[i]);
+            vel[i] = (v_min_ + (v_max_-v_min_)*(std::abs(delta[i])-eps_min_[i]))*sign(delta[i]);
         }
         else
         {
@@ -108,6 +108,22 @@ bool trajectory::eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, con
         }
     }
     return false;
+}
+
+int trajectory::sign(double a)
+{
+    if (a > 0)
+    {
+        return 1;
+    }
+    else if (a < 0)
+    {
+        return -1;
+    }
+    else
+    {
+        return 0;
+    }
 }
 
 void trajectory::waitConnection()
