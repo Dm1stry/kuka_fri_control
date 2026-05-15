@@ -9,7 +9,8 @@
 #include <memory>
 #include <atomic>
 
-#include <boost/lockfree/spsc_queue.hpp>
+// #include <boost/lockfree/spsc_queue.hpp>
+#include "../lockfree/lockfree.hpp"
 
 #include <FRI/friLBRState.h>
 #include <FRI/friLBRCommand.h>
@@ -20,8 +21,9 @@ namespace KUKA_CONTROL
 
 using namespace KUKA::FRI;
 using jarray = std::array<double, KUKA::FRI::LBRState::NUMBER_OF_JOINTS>;
-using jqueue = boost::lockfree::spsc_queue<jarray, boost::lockfree::fixed_sized<true>>;
-constexpr uint16_t MAX_QUEUE_SIZE = 30;
+// using jqueue = boost::lockfree::spsc_queue<jarray, boost::lockfree::fixed_sized<true>>;
+using jqueue = ring_buffer<jarray>;
+constexpr uint16_t MAX_QUEUE_SIZE = 1;
 
 enum control_mode
 {
