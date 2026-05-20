@@ -19,15 +19,16 @@ int main(int argc, char **argv)
 
     // --------------------------- Инициализация сервера
 
-    std::cout << "Hello!\n";
-
     UDPServer<7,14> server("127.0.0.1", 8081, "127.0.0.1", 8080);
+    server.start();
 
-    std::cout << "Goodbye!\n";
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::cout << "Try" << std::endl;
+
+    KukaFRIController kuka(KUKA_CONTROL::JOINT_POSITION);
+    kuka.start();
 
     // --------------------------- Настройки
-    
-    KukaFRIController kuka(KUKA_CONTROL::JOINT_POSITION);
 
     jarray current_position;
     jarray initial_position;
@@ -44,17 +45,13 @@ int main(int argc, char **argv)
     Eigen::Array<double,14,1> msg_torque; 
 
     const double e = 0.1*M_PI/180;
-    const double df = 5*M_PI/180;
+    const double df = 15*M_PI/180;
 
     Eigen::Array<double,7,1> eps;
     Eigen::Array<double,7,1> diff;
 
     eps << e, e, e, e, e, e, e;
     diff << df, df, df, df, df, df, df;
-
-    // trajectory::waitConnection();
-
-    kuka.start();
 
     initial_position = kuka.getMeasuredJointPosition();
     kuka.setTargetJointPosition(initial_position);
@@ -72,7 +69,9 @@ int main(int argc, char **argv)
     // LOGGER::JArrayLogger commanded_pos_logger("commanded_position");
     // LOGGER::JArrayLogger delta_pos_logger("delta_position");
 
-    server.start();
+    // trajectory::waitConnection();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     std::cout << "Старт" << std::endl;
 
@@ -123,6 +122,7 @@ int main(int argc, char **argv)
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }
 
+    kuka.stop();
     server.stop();
 
     return 0;
