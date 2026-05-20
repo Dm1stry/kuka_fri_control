@@ -12,8 +12,6 @@ By:
 (Linux system)
 - cmake
 - Eigen 3.3
-- nlohamnn_json 3.11.3
-- Boost 1.71
 
 ### Installation of dependencies (on ubuntu)
 ```bash
