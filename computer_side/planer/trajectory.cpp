@@ -129,7 +129,7 @@ int trajectory::sign(double a)
 void trajectory::waitConnection()
 {
     std::cout << "alla" << std::endl;
-    const char* name = "/my_shm1";
+    const char* name = "/my_shm2";
     int shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
     if (shm_fd == -1) {
         perror("shm_open");
