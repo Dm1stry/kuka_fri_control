@@ -26,9 +26,9 @@ set(COMPILE_TORQUE_OVERLAY ON)
 set(T_DIR examples/LBRTorqueSineOverlay)
 
 set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
+set(IK ${CMAKE_CURRENT_SOURCE_DIR}/ik)
 set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
 set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
-set(PLANER ${CMAKE_CURRENT_SOURCE_DIR}/planer)
 set(KUKAFRI ${CMAKE_CURRENT_SOURCE_DIR}/kukafri)
 
 if(${COMPILE_TORQUE_OVERLAY})
@@ -60,7 +60,8 @@ set(SOURCES
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 	${SERVER}/json.hpp
 	${LOCKFREE}/lockfree.hpp
-	${PLANER}/trajectory.hpp			${PLANER}/trajectory.cpp
+	${CONTROL}/control.hpp				${CONTROL}/control.cpp
+	${IK}/drake_kinematic.hpp			${IK}/drake_kinematic.cpp			${IK}/cost.hpp
 )
 
 
@@ -68,6 +69,7 @@ find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib RE
 
 # Control
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(drake CONFIG REQUIRED)
 
 message("-- FRI library found in: ${FRI_LIB}")
 
@@ -81,6 +83,7 @@ target_link_libraries(${PROJECT}
     ${FRI_LIB}
 	Threads::Threads
     Eigen3::Eigen
+	drake::drake
 )
 
 target_include_directories(${PROJECT} PUBLIC

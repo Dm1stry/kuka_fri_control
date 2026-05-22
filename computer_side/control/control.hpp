@@ -1,74 +1,63 @@
-#ifndef CONTROL_HPP
-#define CONTROL_HPP
+#ifndef TRAJECTORY
+#define TRAJECTORY
 
 #include <Eigen/Dense>
-#include <algorithm>  
+#include <list>
 #include <iostream>
 
-namespace kuka_control
+#include <iostream>
+#include <fcntl.h>      // shm_open
+#include <sys/mman.h>   // mmap, PROT_*, MAP_*
+#include <unistd.h>     // ftruncate, close
+
+namespace control
 {
-    constexpr int NUM_J = 7;
+    const int N_JOINTS = 7;
+    const double delta_thetta = 1*M_PI/180;
+    const int points_per_delta = 5;
+
 
     class Control
     {
-    private:
-        const double time_tick_;
-        // const Eigen::VectorXd Kp_;
-        // const Eigen::VectorXd Kd_;
-        // const Eigen::VectorXd Kv_;
-        // const Eigen::VectorXd static_friction_;
-        // const Eigen::VectorXd dynamic_friction_;
+        private:
 
-        // Eigen::VectorXd q_previous_;
+            double time_tick_ = 0.005;
+            double v_min_ = 0.001;
+            double v_max_ = 0.002;
 
-        // Eigen::VectorXd torque_;
-        // Eigen::VectorXd q_;
-        // Eigen::VectorXd v_;
+            const double e_min_ = 0.05*M_PI/180;
+            const double e_max_ = 0.1*M_PI/180;
+            const double max_d_ = 15*M_PI/180;
 
-        // Eigen::VectorXd q_d_;
+            Eigen::Array<double,N_JOINTS,1> eps_min_;
+            Eigen::Array<double,N_JOINTS,1> eps_max_;
+            Eigen::Array<double,N_JOINTS,1> max_delta_;
 
-        // Временное
+            std::list<Eigen::Array<double,N_JOINTS,1>> points_;
+            bool done_ = true;
 
-        const double Kp_;
-        const double Kd_;
+            Eigen::Array<double,N_JOINTS,1> virtual_thetta_;
+            Eigen::Array<double,N_JOINTS,1> next_thetta_;
 
-        const double v_max_;
-        const double torque_max_;
+        public:
+            Control(const Eigen::Array<double,N_JOINTS,1> &first_thetta);
 
-        double q_previous_;
+            bool push(const Eigen::Array<double,N_JOINTS,1> &thetta);
+            bool pop(Eigen::Array<double,N_JOINTS,1> &thetta);
 
-        double torque_;
-        double q_;
-        double v_;
+            Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
+            Eigen::Array<double,N_JOINTS,1>& getNextPoint(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
+            bool getDone();
 
-        double q_d_;
+            size_t size();
 
-        double gamma_;
-        double k_;
-        double lambda_;
-        double s_;
-
-        double I_h_;
-        double b_h_;
-        double T_h_;
-        double mr_h_;
-
-        unsigned long count = 0;
-
-    public: 
-
-        Control(const double Kp = 1, const double Kd = 0, const double v_max = 2, const double time_tick = 0.005);
-        // std::array<double, NUM_J> clacTorque(std::array<double, NUM_J> q, std::array<double, NUM_J> q_d);
-
-        void setPreviousPos(double q);
-
-        double calcTorque(double q, double q_d);
-
-        int sat(double s);
     };
 
+    bool eigenArrayEqual(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &eps);
+    bool eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &diff);
     int sign(double a);
-}
 
+    void waitConnection();
+}
 
 #endif

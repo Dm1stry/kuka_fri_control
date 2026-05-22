@@ -1,73 +1,167 @@
 #include "control.hpp"
 
-using namespace kuka_control;
+using namespace control;
 
-Control::Control(const double Kp, const double Kd, const double v_max, const double time_tick):
-Kp_(Kp),
-Kd_(Kd),
-time_tick_(time_tick),
-q_previous_(0),
-v_max_(v_max),
-torque_max_(10),
-k_(1),
-lambda_(1)
+Control::Control(const Eigen::Array<double,7,1> &first_thetta)
 {
-    torque_ = 0;
-    
-    I_h_ = 0.002;
-    b_h_ = 0.1;
-    T_h_ = 0.0;
-    mr_h_ = 0.0;
+    points_.push_back(first_thetta);
 
-    gamma_ = 1;
-    lambda_ = 3;
-    k_ = 1;
+    virtual_thetta_ = first_thetta;
+
+    eps_max_ << e_max_, e_max_, e_max_, e_max_, e_max_, e_max_, e_max_;
+    eps_min_ << e_min_, e_min_, e_min_, e_min_, e_min_, e_min_, e_min_;
+    max_delta_ << max_d_, max_d_, max_d_, max_d_, max_d_, max_d_, max_d_;
 }
 
-void Control::setPreviousPos(double q)
+// =======================================================================
+
+bool Control::push(const Eigen::Array<double,7,1> &thetta)
 {
-    q_previous_ = q;
+    points_.push_back(thetta);
+    return true;
 }
 
-double Control::calcTorque(double q, double q_d)
+bool Control::pop(Eigen::Array<double,7,1> &thetta)
 {
-    v_ = (q - q_previous_)/time_tick_;
-    q_previous_ = q;
-
-    s_ = -v_ + lambda_*(q_d-q);
-
-    if (abs(q_d-q)>0.01745)
+    if (points_.size() == 0)
     {
-        I_h_ += -gamma_*s_*lambda_*v_*time_tick_;
-        b_h_ += -gamma_*v_*s_*time_tick_;
-        T_h_ += 10*gamma_*s_*sign(q_d-q)*time_tick_;
-        // mr_h_ += gamma_*s_*sin(q-M_PI_4);
+        return false;
+    }
+    thetta = points_.front();
+    points_.pop_front();
+
+    return true;
+}
+
+size_t Control::size()
+{
+    return points_.size();
+}
+
+// =======================================================================
+
+Eigen::Array<double,N_JOINTS,1> Control::getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta)
+{
+    Eigen::Array<double,N_JOINTS,1> delta = next_thetta - current_thetta;
+    Eigen::Array<double,N_JOINTS,1> vel;
+
+    for(int i = 0; i < N_JOINTS; ++i)
+    {
+        if ((std::abs(delta[i]) <= eps_min_[i]))
+        {
+            vel[i] = 0.;
+        }
+        else if(std::abs(delta[i]) < eps_max_[i])
+        {
+            vel[i] = (v_min_ + (v_max_-v_min_)*(std::abs(delta[i])-eps_min_[i]))*sign(delta[i]);
+        }
+        else
+        {
+            vel[i] = v_max_*sign(delta[i]);
+        }
+
+    }
+
+    return vel;
+}
+
+Eigen::Array<double,N_JOINTS,1>& Control::getNextPoint(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta)
+{
+    
+    virtual_thetta_ = virtual_thetta_ + this->getDelta(next_thetta, virtual_thetta_);
+
+    return virtual_thetta_;
+}
+
+bool Control::getDone()
+{
+    return done_;
+}
+
+// =======================================================================
+
+bool control::eigenArrayEqual(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &eps)
+{
+    for(int i = 0; i < N_JOINTS; ++i)
+    {
+        if(std::abs(arr1[i]-arr2[i]) > eps[i]) 
+        {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool control::eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &diff)
+{
+    for(int i = 0; i < N_JOINTS; ++i)
+    {
+        if(std::abs(arr1[i]-arr2[i]) > diff[i]) 
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
+int control::sign(double a)
+{
+    if (a > 0)
+    {
+        return 1;
+    }
+    else if (a < 0)
+    {
+        return -1;
     }
     else
     {
-        T_h_ = 0.0;
+        return 0;
+    }
+}
+
+void control::waitConnection()
+{
+    std::cout << "alla" << std::endl;
+    const char* name = "/my_shm2";
+    int shm_fd = shm_open(name, O_CREAT | O_RDWR, 0666);
+    if (shm_fd == -1) {
+        perror("shm_open");
+        return;
     }
 
-    T_h_ = std::clamp(T_h_, -1., 1.);
+    ftruncate(shm_fd, sizeof(bool));
 
-    std::cout << I_h_ << "\t" << b_h_ << "\t" << T_h_ << "\t" << mr_h_ << "\n";
+    bool* ptr = (bool*)mmap(0, sizeof(bool), PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap");
+        return;
+    }
 
-    torque_ = -I_h_*lambda_*v_ + b_h_*v_ + T_h_*sign(q_d-q) + mr_h_*sin(q-M_PI_4) + k_*s_;
+    // const char* message = "Временно";
+    // std::memcpy(ptr, message, strlen(message) + 1);
+    *ptr = false;
 
-    torque_ = std::clamp(torque_, -torque_max_, torque_max_);
+    ptr = (bool*)mmap(0, sizeof(bool), PROT_READ, MAP_SHARED, shm_fd, 0);
+    if (ptr == MAP_FAILED) {
+        perror("mmap");
+        return;
+    }
 
-    return torque_;
-}
+    std::cout << "Ожидание..." << std::endl;
 
-int Control::sat(double s)
-{
-    if (std::abs(s) > 0.05) return k_*sign(s);
-    else return s/0.05;
-}
+    while(1)
+    {
+        // std::cout << *(static_cast<bool*>(ptr)) << std::endl;
+        if (*(static_cast<bool*>(ptr)))
+        {
+            break;
+        }
+    }
 
-int kuka_control::sign(double a)
-{
-    if (a > 0.000001) return 1;
-    else if (a < -0.000001) return -1;
-    else return 0;
+    std::cout << "Начало" << std::endl;
+
+    munmap(ptr, sizeof(bool));
+    close(shm_fd);
+    shm_unlink(name);
 }
