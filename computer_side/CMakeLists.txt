@@ -30,6 +30,7 @@ set(IK ${CMAKE_CURRENT_SOURCE_DIR}/ik)
 set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
 set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
 set(KUKAFRI ${CMAKE_CURRENT_SOURCE_DIR}/kukafri)
+set(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/logger)
 
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
@@ -42,12 +43,6 @@ if(${COMPILE_TORQUE_OVERLAY})
 	)
 endif()
 
-set(LOGGER_SOURCES
-	logger/ilogger.hpp
-	logger/filelogger.hpp		logger/filelogger.cpp
-	logger/jarraylogger.hpp		logger/jarraylogger.cpp
-)
-
 set(SOURCES
 	main.cpp
 	${KUKAFRI}/customlbrclient.hpp			${KUKAFRI}/customlbrclient.cpp
@@ -55,12 +50,14 @@ set(SOURCES
 	${KUKAFRI}/apiserver.hpp				${KUKAFRI}/apiserver.cpp
 	${KUKAFRI}/helper_functions.hpp
 
-	${LOGGER_SOURCES}
+	${LOGGER}/logger.hpp				${LOGGER}/logger.cpp
 	# Сюда сорцы
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 	${SERVER}/json.hpp
 	${LOCKFREE}/lockfree.hpp
+	${CONTROL}/control_interface.hpp
 	${CONTROL}/control.hpp				${CONTROL}/control.cpp
+	${CONTROL}/task_space_control.hpp	${CONTROL}/task_space_control.cpp
 	${IK}/drake_kinematic.hpp			${IK}/drake_kinematic.cpp			${IK}/cost.hpp
 )
 
