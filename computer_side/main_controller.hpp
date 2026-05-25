@@ -23,7 +23,7 @@
 class KukaController
 {
 public:
-    KukaController(KUKA_CONTROL::control_mode mode = KUKA_CONTROL::JOINT_POSITION, bool use_task_space = false);
+    KukaController(KUKA_CONTROL::control_mode mode = KUKA_CONTROL::JOINT_POSITION, const std::string &urdf_name = "../robots/iiwa.urdf", bool use_task_space = false);
     ~KukaController();
 
     void start();
@@ -43,6 +43,8 @@ private:
     KUKA_CONTROL::control_mode mode_;
     bool use_task_space_;
     double dt_;
+    const std::string urdf_name_;
+
     int state_;
 
     Eigen::Vector3d target_pos_;

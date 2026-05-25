@@ -1,9 +1,10 @@
 #include "main_controller.hpp"
 
-KukaController::KukaController(KUKA_CONTROL::control_mode mode, bool use_task_space):
+KukaController::KukaController(KUKA_CONTROL::control_mode mode, const std::string &urdf_name, bool use_task_space):
 mode_(mode),
 use_task_space_(use_task_space),
-kuka_(mode)
+kuka_(mode),
+urdf_name_(urdf_name)
 {
     dt_ = 0.005;
     state_ = 0;
@@ -43,7 +44,7 @@ void KukaController::start()
 
     if (!controller_)
     {
-        controller_ = std::make_unique<control::Control>(initial_thetta_, dt_);
+        controller_ = std::make_unique<control::Control>(initial_thetta_, dt_, urdf_name_);
     }
 
     controller_->updateCurrentState(initial_thetta_, target_torque_);
@@ -103,15 +104,15 @@ void KukaController::loop(std::stop_token stop_token)
                 kuka_.setTargetJointTorque(eigenArrayToStdArray(target_torque_));
             }
 
-            std::cout << "State: " << state_ << std::endl;
-            std::cout << "Target: " << target_thetta_.transpose()*180/M_PI << std::endl;
-            std::cout << "Current: " << current_thetta_.transpose()*180/M_PI << std::endl;
-            if (mode_ == KUKA_CONTROL::TORQUE)
-            {
-                std::cout << "Target torque: " << target_torque_.transpose() << std::endl;
-            }
-            std::cout << "Torque: " << current_torque_.transpose() << std::endl;
-            std::cout << "=================================================" << std::endl;
+            // std::cout << "State: " << state_ << std::endl;
+            // std::cout << "Target: " << target_thetta_.transpose()*180/M_PI << std::endl;
+            // std::cout << "Current: " << current_thetta_.transpose()*180/M_PI << std::endl;
+            // if (mode_ == KUKA_CONTROL::TORQUE)
+            // {
+            //     std::cout << "Target torque: " << target_torque_.transpose() << std::endl;
+            // }
+            // std::cout << "Torque: " << current_torque_.transpose() << std::endl;
+            // std::cout << "=================================================" << std::endl;
 
             current_pos_ = controller_->getCurrentPosition();
             current_rot_ = controller_->getCurrentRotation();
