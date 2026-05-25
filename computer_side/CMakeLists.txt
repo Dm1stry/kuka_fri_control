@@ -45,6 +45,7 @@ endif()
 
 set(SOURCES
 	main.cpp
+	main_controller.cpp						main_controller.hpp 
 	${KUKAFRI}/customlbrclient.hpp			${KUKAFRI}/customlbrclient.cpp
 	${KUKAFRI}/kukafricontroller.hpp		${KUKAFRI}/kukafricontroller.cpp
 	${KUKAFRI}/apiserver.hpp				${KUKAFRI}/apiserver.cpp

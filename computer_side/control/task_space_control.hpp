@@ -37,6 +37,7 @@ namespace control
         void updateCurrentState(const Eigen::Array<double,N_JOINTS,1> &current_thetta,
                                 const Eigen::Array<double,N_JOINTS,1> &current_torque) override;
         Eigen::Array<double,N_JOINTS,1> getTorque() override;
+        Eigen::Array<double,N_JOINTS,1> getNextPoint() override;
         Eigen::Array<double,N_JOINTS,1> getTorque(const Eigen::Array<double,N_JOINTS,1> &q,
                                                   const Eigen::Array<double,N_JOINTS,1> &dq);
         Eigen::Array<double,N_JOINTS,1> getTargetThetta() const override;

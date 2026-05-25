@@ -93,6 +93,12 @@ Eigen::Array<double,N_JOINTS,1> Control::getTorque()
     return getTorque(next_thetta_, current_thetta_);
 }
 
+Eigen::Array<double,N_JOINTS,1> Control::getNextPoint()
+{
+    next_thetta_ = getNextPoint(target_thetta_, current_thetta_);
+    return next_thetta_;
+}
+
 Eigen::Array<double,N_JOINTS,1> Control::getTargetThetta() const
 {
     return target_thetta_;

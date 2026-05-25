@@ -122,6 +122,11 @@ Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque()
     return target_torque_;
 }
 
+Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getNextPoint()
+{
+    return q_ref_;
+}
+
 Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque(
     const Eigen::Array<double,N_JOINTS,1> &q,
     const Eigen::Array<double,N_JOINTS,1> &dq)

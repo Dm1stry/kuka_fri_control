@@ -20,6 +20,7 @@ namespace control
         virtual void updateCurrentState(const JointArray &current_thetta, const JointArray &current_torque) = 0;
 
         virtual JointArray getTorque() = 0;
+        virtual JointArray getNextPoint() = 0;
         virtual JointArray getTargetThetta() const = 0;
         virtual Eigen::Vector3d getCurrentPosition() const = 0;
         virtual RotationMatrix getCurrentRotation() const = 0;
