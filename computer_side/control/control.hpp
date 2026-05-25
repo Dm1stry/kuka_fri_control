@@ -33,6 +33,8 @@ namespace control
             const double e_min_ = 0.05*M_PI/180;
             const double e_max_ = 0.1*M_PI/180;
             const double max_d_ = 15*M_PI/180;
+            const double target_pos_eps_ = 1e-4;
+            const double target_rot_eps_ = 1e-3;
 
             Eigen::Array<double,N_JOINTS,1> eps_min_;
             Eigen::Array<double,N_JOINTS,1> eps_max_;

@@ -64,6 +64,14 @@ size_t Control::size()
 
 int Control::updateTarget(const Eigen::Vector3d &target_pos, const Eigen::Matrix<double,3,3> &target_rot)
 {
+    const bool same_position = (target_pos - target_pos_).cwiseAbs().maxCoeff() <= target_pos_eps_;
+    const bool same_rotation = (target_rot - target_rot_).cwiseAbs().maxCoeff() <= target_rot_eps_;
+
+    if (same_position && same_rotation)
+    {
+        return ik_state_;
+    }
+
     target_pos_ = target_pos;
     target_rot_ = target_rot;
 

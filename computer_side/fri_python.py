@@ -6,7 +6,7 @@
 # force_msg_[0], force_msg_[1], force_msg_[2], force_msg_[3], force_msg_[4], force_msg_[5];
 
 import numpy as np
-import build.kuka_fri_py as fri
+import kuka_fri_py as fri
 import socket
 
 haptic_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -15,13 +15,13 @@ haptic_sock.settimeout(0.001)
 
 controller = fri.KukaController(
     fri.ControlMode.JOINT_POSITION,
-    "../robots/iiwa.urdf",
+    "robots/iiwa.urdf",
     False,
 )
 
 controller.start()
 
-pos = np.array([0.75, 0.0,  0.35], dtype=np.float64)
+pos = np.array([0.65, 0.0,  0.35], dtype=np.float64)
 
 rot = np.array([
     [-1.0, 0.0, 0.0],
@@ -34,7 +34,7 @@ controller.set_target(pos, rot)
 while 1:
     obs = controller.get_observation()
     print(obs)
-    
+
     try:
         data, addr = haptic_sock.recvfrom(1024)
         message = np.array(list(map(float, data.decode()[1:-1].split(","))))
@@ -42,12 +42,16 @@ while 1:
         pos[1] += message[1]
         pos[2] += message[2]
 
+        rot[0] = message[3:6]
+        rot[1] = message[6:9]
+        rot[2] = message[9:12]
+
+        # print(rot)
         controller.set_target(pos, rot)
 
     except socket.timeout:
         data, addr = None, None  # или просто continue
 
-    # print(pos)
 
 controller.stop()
 

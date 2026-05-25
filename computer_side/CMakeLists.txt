@@ -119,6 +119,8 @@ if(BUILD_PYTHON_BINDINGS)
 		${CMAKE_CURRENT_SOURCE_DIR}
 		deps/include/
 	)
+
+	install(TARGETS kuka_fri_py LIBRARY DESTINATION .)
 endif()
 
 if(COMPILE_JOINT_OVERLAY)
