@@ -11,6 +11,7 @@
 #include <memory>
 #include <string>
 #include <iostream>
+#include <cmath>
 
 #include "control_interface.hpp"
 
@@ -53,6 +54,13 @@ namespace control
         Eigen::Matrix<double,6,N_JOINTS> calcJacobian(const Eigen::Array<double,N_JOINTS,1> &q);
         Eigen::Matrix<double,6,1> calcTaskError(const Eigen::Matrix3d &current_rotation,
                                                 const Eigen::Vector3d &current_position) const;
+        Eigen::Matrix<double,6,1> calcTaskErrorToTarget(const Eigen::Matrix3d &current_rotation,
+                                                        const Eigen::Vector3d &current_position,
+                                                        const Eigen::Matrix3d &target_rotation,
+                                                        const Eigen::Vector3d &target_position) const;
+        Eigen::Array<double,N_JOINTS,1> getJointDelta(const Eigen::Array<double,N_JOINTS,1> &target_q,
+                                                      const Eigen::Array<double,N_JOINTS,1> &current_q) const;
+        void updateVirtualTarget();
         Eigen::Array<double,N_JOINTS,1> calcBiasTorque(const Eigen::Array<double,N_JOINTS,1> &q,
                                                        const Eigen::Array<double,N_JOINTS,1> &dq);
 
@@ -62,9 +70,21 @@ namespace control
         std::string base_frame_;
         std::string end_effector_frame_;
         double time_tick_ = 0.005;
+        double v_min_ = 0.001;
+        double v_max_ = 0.002;
+        double linear_step_min_ = 0.0005;
+        double linear_step_max_ = 0.002;
+        double angular_step_min_ = 0.05 * M_PI / 180.;
+        double angular_step_max_ = 0.2 * M_PI / 180.;
+        double e_min_ = 0.05 * M_PI / 180.;
+        double e_max_ = 0.1 * M_PI / 180.;
+        double target_pos_eps_ = 1e-4;
+        double target_rot_eps_ = 1e-3;
 
         Eigen::Vector3d target_position_;
         Eigen::Matrix3d target_rotation_;
+        Eigen::Vector3d virtual_target_position_;
+        Eigen::Matrix3d virtual_target_rotation_;
         Eigen::Vector3d current_position_;
         Eigen::Matrix3d current_rotation_;
 
@@ -77,6 +97,7 @@ namespace control
         Eigen::Array<double,N_JOINTS,1> current_q_;
         Eigen::Array<double,N_JOINTS,1> current_dq_;
         Eigen::Array<double,N_JOINTS,1> previous_q_;
+        Eigen::Array<double,N_JOINTS,1> virtual_q_;
         Eigen::Array<double,N_JOINTS,1> target_torque_;
         Eigen::Array<double,N_JOINTS,1> q_ref_;
         Eigen::Array<double,N_JOINTS,1> nullspace_stiffness_;
@@ -84,6 +105,7 @@ namespace control
 
         bool use_bias_compensation_ = true;
         bool state_initialized_ = false;
+        bool virtual_target_initialized_ = false;
         int state_ = 1;
     };
 }

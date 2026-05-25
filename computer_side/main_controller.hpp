@@ -15,7 +15,7 @@
 #include "logger/logger.hpp"
 #include "udp/udp_server.hpp"
 #include "control/control.hpp"
-// #include "control/task_space_control.hpp"
+#include "control/task_space_control.hpp"
 #include "kukafri/helper_functions.hpp"
 #include "kukafri/customlbrclient.hpp"
 

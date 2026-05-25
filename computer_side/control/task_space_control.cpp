@@ -23,18 +23,21 @@ time_tick_(time_tick)
 
     target_position_.setZero();
     target_rotation_.setIdentity();
+    virtual_target_position_.setZero();
+    virtual_target_rotation_.setIdentity();
     current_position_.setZero();
     current_rotation_.setIdentity();
     task_error_.setZero();
     force_.setZero();
     target_wrench_.setZero();
 
-    stiffness_ << 500., 500., 500., 80., 80., 80.;
-    damping_ << 45., 45., 45., 8., 8., 8.;
+    stiffness_ << 80., 80., 80., 500., 500., 500.;
+    damping_ << 8., 8., 8., 45., 45., 45.;
 
     current_q_.setZero();
     current_dq_.setZero();
     previous_q_.setZero();
+    virtual_q_.setZero();
     target_torque_.setZero();
     q_ref_.setZero();
     nullspace_stiffness_.setZero();
@@ -112,19 +115,30 @@ void TaskSpaceControl::updateCurrentState(const Eigen::Array<double,N_JOINTS,1> 
     current_position_ = X_BE.translation();
     current_rotation_ = X_BE.rotation().matrix();
 
+    if (!virtual_target_initialized_)
+    {
+        virtual_q_ = current_q_;
+        virtual_target_position_ = current_position_;
+        virtual_target_rotation_ = current_rotation_;
+        q_ref_ = virtual_q_;
+        virtual_target_initialized_ = true;
+    }
+
     const Eigen::Matrix<double,6,N_JOINTS> J = calcJacobian(current_q_);
     force_ = J.transpose().fullPivHouseholderQr().solve(current_torque.matrix());
 }
 
 Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque()
 {
+    updateVirtualTarget();
     target_torque_ = getTorque(current_q_, current_dq_);
     return target_torque_;
 }
 
 Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getNextPoint()
 {
-    return q_ref_;
+    updateVirtualTarget();
+    return virtual_q_;
 }
 
 Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque(
@@ -141,8 +155,6 @@ Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque(
     current_position_ = X_BE.translation();
     current_rotation_ = X_BE.rotation().matrix();
     task_error_ = calcTaskError(current_rotation_, current_position_);
-
-    std::cout << task_error_ << std::endl;
 
     const Eigen::Matrix<double,6,N_JOINTS> J = calcJacobian(q);
     const Eigen::Matrix<double,6,1> task_velocity = J * dq.matrix();
@@ -172,7 +184,7 @@ Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque(
 
 Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTargetThetta() const
 {
-    return q_ref_;
+    return virtual_q_;
 }
 
 Eigen::Vector3d TaskSpaceControl::getCurrentPosition() const
@@ -242,13 +254,112 @@ Eigen::Matrix<double,6,1> TaskSpaceControl::calcTaskError(
     const Eigen::Matrix3d &current_rotation,
     const Eigen::Vector3d &current_position) const
 {
-    Eigen::Matrix<double,6,1> error;
-    error.head<3>() = target_position_ - current_position;
+    return calcTaskErrorToTarget(
+        current_rotation,
+        current_position,
+        virtual_target_rotation_,
+        virtual_target_position_);
+}
 
-    Eigen::AngleAxisd angle_axis(target_rotation_ * current_rotation.transpose());
-    error.tail<3>() = angle_axis.angle() * angle_axis.axis();
+Eigen::Matrix<double,6,1> TaskSpaceControl::calcTaskErrorToTarget(
+    const Eigen::Matrix3d &current_rotation,
+    const Eigen::Vector3d &current_position,
+    const Eigen::Matrix3d &target_rotation,
+    const Eigen::Vector3d &target_position) const
+{
+    Eigen::Matrix<double,6,1> error;
+    Eigen::AngleAxisd angle_axis(target_rotation * current_rotation.transpose());
+    error.head<3>() = angle_axis.angle() * angle_axis.axis();
+    error.tail<3>() = target_position - current_position;
 
     return error;
+}
+
+Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getJointDelta(
+    const Eigen::Array<double,N_JOINTS,1> &target_q,
+    const Eigen::Array<double,N_JOINTS,1> &current_q) const
+{
+    Eigen::Array<double,N_JOINTS,1> delta = target_q - current_q;
+    Eigen::Array<double,N_JOINTS,1> step;
+
+    for (int i = 0; i < N_JOINTS; ++i)
+    {
+        const double abs_delta = std::abs(delta[i]);
+
+        if (abs_delta <= e_min_)
+        {
+            step[i] = 0.;
+        }
+        else if (abs_delta < e_max_)
+        {
+            const double ratio = (abs_delta - e_min_) / (e_max_ - e_min_);
+            const double velocity = v_min_ + (v_max_ - v_min_) * ratio;
+            step[i] = std::min(velocity, abs_delta) * (delta[i] > 0. ? 1. : -1.);
+        }
+        else
+        {
+            step[i] = std::min(v_max_, abs_delta) * (delta[i] > 0. ? 1. : -1.);
+        }
+    }
+
+    return step;
+}
+
+void TaskSpaceControl::updateVirtualTarget()
+{
+    if (!virtual_target_initialized_)
+    {
+        return;
+    }
+
+    const Eigen::Matrix<double,6,1> error_to_goal = calcTaskErrorToTarget(
+        virtual_target_rotation_,
+        virtual_target_position_,
+        target_rotation_,
+        target_position_);
+
+    Eigen::Matrix<double,6,1> step_error;
+    step_error.setZero();
+
+    const double angular_error = error_to_goal.head<3>().norm();
+    if (angular_error > target_rot_eps_)
+    {
+        const double angular_step = std::min(
+            angular_step_max_,
+            std::max(angular_step_min_, angular_error));
+        step_error.head<3>() = error_to_goal.head<3>() / angular_error *
+                               std::min(angular_step, angular_error);
+    }
+
+    const double linear_error = error_to_goal.tail<3>().norm();
+    if (linear_error > target_pos_eps_)
+    {
+        const double linear_step = std::min(
+            linear_step_max_,
+            std::max(linear_step_min_, linear_error));
+        step_error.tail<3>() = error_to_goal.tail<3>() / linear_error *
+                               std::min(linear_step, linear_error);
+    }
+
+    if (step_error.isZero(0.))
+    {
+        return;
+    }
+
+    const Eigen::Matrix<double,6,N_JOINTS> J = calcJacobian(virtual_q_);
+    const Eigen::Matrix<double,N_JOINTS,1> q_delta = pseudoInverse(J) * step_error;
+    const Eigen::Array<double,N_JOINTS,1> q_command = virtual_q_ + q_delta.array();
+
+    virtual_q_ += getJointDelta(q_command, virtual_q_);
+    q_ref_ = virtual_q_;
+
+    plant_.SetPositions(context_.get(), virtual_q_.matrix());
+    const auto &base_frame = plant_.GetFrameByName(base_frame_);
+    const auto &end_effector_frame = plant_.GetFrameByName(end_effector_frame_);
+    const auto X_BE = plant_.CalcRelativeTransform(*context_, base_frame, end_effector_frame);
+
+    virtual_target_position_ = X_BE.translation();
+    virtual_target_rotation_ = X_BE.rotation().matrix();
 }
 
 Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::calcBiasTorque(

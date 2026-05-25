@@ -37,9 +37,9 @@ void KukaController::start()
 
     if (use_task_space_)
     {
-        // auto task_controller = std::make_unique<control::TaskSpaceControl>("../robots/iiwa.urdf", "iiwa_link_0", "iiwa_link_ee", dt);
-        // task_controller->setNullspaceTarget(initial_thetta);
-        // controller = std::move(task_controller);
+        auto task_controller = std::make_unique<control::TaskSpaceControl>(urdf_name_, "iiwa_link_0", "iiwa_link_ee", dt_);
+        task_controller->setNullspaceTarget(initial_thetta_);
+        controller_ = std::move(task_controller);
     }
 
     if (!controller_)
@@ -82,14 +82,17 @@ void KukaController::stop()
 }
 
 void KukaController::loop(std::stop_token stop_token)
-{
+{   
+    auto init = std::chrono::steady_clock::now();
     while (!stop_token.stop_requested())
-    {
+    {   
+        
         current_thetta_ = stdArrayToEigenArray(kuka_.getMeasuredJointPosition());
         current_torque_ = stdArrayToEigenArray(kuka_.getExternalJointTorque());
 
         {
             std::lock_guard<std::mutex> lock(state_mutex_);
+            // init = std::chrono::steady_clock::now();
             controller_->updateCurrentState(current_thetta_, current_torque_);
 
             if (mode_ == KUKA_CONTROL::JOINT_POSITION)
@@ -125,6 +128,7 @@ void KukaController::loop(std::stop_token stop_token)
                         force_msg_[0], force_msg_[1], force_msg_[2], force_msg_[3], force_msg_[4], force_msg_[5];
         }
 
+        // std::cout << "loop: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - init).count() << "\n";
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }
 }
@@ -138,9 +142,10 @@ Eigen::Array<double,25,1> KukaController::getObservation()
 void KukaController::setTarget(const Eigen::Vector3d& target_position, const Eigen::Matrix<double,3,3>& target_rotation)
 {
     std::lock_guard<std::mutex> lock(state_mutex_);
-
+    // auto init = std::chrono::steady_clock::now();
     target_pos_ = target_position;
     target_rot_ = target_rotation;
     state_ = controller_->updateTarget(target_pos_, target_rot_);
     target_thetta_ = controller_->getTargetThetta();
+    // std::cout << "set: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - init).count() << "\n";
 }

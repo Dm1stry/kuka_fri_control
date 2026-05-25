@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     std::cout << "Server started" << std::endl;
 
-    KukaController controller(mode);
+    KukaController controller(mode, "../robots/iiwa.urdf", true);
     controller.start();
 
     Eigen::Vector3d target_pos;
@@ -34,6 +34,8 @@ int main(int argc, char **argv)
     target_rot << obs_msg[10], obs_msg[11], obs_msg[12],
                   obs_msg[13], obs_msg[14], obs_msg[15],
                   obs_msg[16], obs_msg[17], obs_msg[18];
+
+    int i = 0;
 
     while (true)
     {
@@ -49,6 +51,13 @@ int main(int argc, char **argv)
 
             controller.setTarget(target_pos, target_rot);
         }
+
+        // if (++i > 3000)
+        // {
+        //     target_pos[1] += 0.4;
+        //     controller.setTarget(target_pos, target_rot);
+        //     i = -10000000;
+        // }
 
         obs_msg = controller.getObservation();
         server.setMsg(obs_msg);
