@@ -71,9 +71,9 @@ namespace control
         std::string end_effector_frame_;
         double time_tick_ = 0.005;
         double v_min_ = 0.001;
-        double v_max_ = 0.002;
+        double v_max_ = 0.003;
         double linear_step_min_ = 0.0005;
-        double linear_step_max_ = 0.002;
+        double linear_step_max_ = 0.005;
         double angular_step_min_ = 0.05 * M_PI / 180.;
         double angular_step_max_ = 0.2 * M_PI / 180.;
         double e_min_ = 0.05 * M_PI / 180.;

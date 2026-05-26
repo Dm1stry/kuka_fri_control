@@ -28,7 +28,7 @@ namespace control
 
             double time_tick_ = 0.005;
             double v_min_ = 0.001;
-            double v_max_ = 0.002;
+            double v_max_ = 0.003;
 
             const double e_min_ = 0.05*M_PI/180;
             const double e_max_ = 0.1*M_PI/180;

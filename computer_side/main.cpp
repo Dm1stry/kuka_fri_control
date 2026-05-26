@@ -52,12 +52,12 @@ int main(int argc, char **argv)
             controller.setTarget(target_pos, target_rot);
         }
 
-        // if (++i > 3000)
-        // {
-        //     target_pos[1] += 0.4;
-        //     controller.setTarget(target_pos, target_rot);
-        //     i = -10000000;
-        // }
+        if (++i > 3000)
+        {
+            target_pos[1] += 0.4;
+            controller.setTarget(target_pos, target_rot);
+            i = -10000000;
+        }
 
         obs_msg = controller.getObservation();
         server.setMsg(obs_msg);

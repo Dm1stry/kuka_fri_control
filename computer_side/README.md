@@ -34,3 +34,14 @@ controller.start()
 obs = controller.get_observation()
 controller.stop()
 ```
+
+
+```bash
+conda activate lerobot
+
+pip uninstall -y kuka-fri-py
+
+CMAKE_EXECUTABLE=/usr/bin/cmake \
+CMAKE_ARGS='-Ddrake_DIR=/home/valikv/drake/drake/lib/cmake/drake' \
+python -m pip install . --force-reinstall
+```
