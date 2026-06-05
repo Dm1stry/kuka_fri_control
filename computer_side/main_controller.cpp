@@ -4,11 +4,13 @@ KukaController::KukaController(KUKA_CONTROL::control_mode mode, const std::strin
 mode_(mode),
 use_task_space_(use_task_space),
 kuka_(mode),
-urdf_name_(urdf_name)
+urdf_name_(urdf_name),
+log_("controller_log.csv")
 {
-    dt_ = 0.005;
+    dt_ = 0.002;
     state_ = 0;
     target_torque_ << 0, 0, 0, 0, 0, 0, 0; 
+    zero_thetta_ << 0, 0, 0, 0, 0, 0, 0;
     zero_torque_ << 0, 0, 0, 0, 0, 0, 0; 
     obs_msg_.setZero();
 }
@@ -26,6 +28,8 @@ void KukaController::start()
     }
 
     kuka_.start();
+    log_.start();
+    init_time_ = std::chrono::steady_clock::now();
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
     std::cout << "FRI started" << std::endl;
 
@@ -38,7 +42,7 @@ void KukaController::start()
     if (use_task_space_)
     {
         auto task_controller = std::make_unique<control::TaskSpaceControl>(urdf_name_, "iiwa_link_0", "iiwa_link_ee", dt_);
-        task_controller->setNullspaceTarget(initial_thetta_);
+        task_controller->setNullspaceTarget(zero_thetta_);
         controller_ = std::move(task_controller);
     }
 
@@ -79,13 +83,14 @@ void KukaController::stop()
     }
 
     kuka_.stop();
+    log_.stop();
 }
 
 void KukaController::loop(std::stop_token stop_token)
 {   
-    auto init = std::chrono::steady_clock::now();
     while (!stop_token.stop_requested())
     {   
+        Eigen::Array<double,9,1> log_data;
         
         current_thetta_ = stdArrayToEigenArray(kuka_.getMeasuredJointPosition());
         current_torque_ = stdArrayToEigenArray(kuka_.getExternalJointTorque());
@@ -126,6 +131,35 @@ void KukaController::loop(std::stop_token stop_token)
                         current_rot_(1,0), current_rot_(1,1), current_rot_(1,2),
                         current_rot_(2,0), current_rot_(2,1), current_rot_(2,2),
                         force_msg_[0], force_msg_[1], force_msg_[2], force_msg_[3], force_msg_[4], force_msg_[5];
+
+            const double time_us = static_cast<double>(
+                std::chrono::duration_cast<std::chrono::microseconds>(
+                    std::chrono::steady_clock::now() - init_time_).count());
+
+            log_data << 0, time_us,
+                        target_thetta_[0], target_thetta_[1], target_thetta_[2], target_thetta_[3],
+                        target_thetta_[4], target_thetta_[5], target_thetta_[6];
+            log_.setData(log_data);
+
+            log_data << 1, time_us,
+                        current_thetta_[0], current_thetta_[1], current_thetta_[2], current_thetta_[3],
+                        current_thetta_[4], current_thetta_[5], current_thetta_[6];
+            log_.setData(log_data);
+
+            log_data << 2, time_us,
+                        target_torque_[0], target_torque_[1], target_torque_[2], target_torque_[3],
+                        target_torque_[4], target_torque_[5], target_torque_[6];
+            log_.setData(log_data);
+
+            log_data << 3, time_us,
+                        current_torque_[0], current_torque_[1], current_torque_[2], current_torque_[3],
+                        current_torque_[4], current_torque_[5], current_torque_[6];
+            log_.setData(log_data);
+
+            log_data << 5, time_us,
+                current_pos_[0], current_pos_[1], current_pos_[2],
+                0., 0., 0., 0.;
+            log_.setData(log_data);
         }
 
         // std::cout << "loop: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - init).count() << "\n";
@@ -142,10 +176,20 @@ Eigen::Array<double,25,1> KukaController::getObservation()
 void KukaController::setTarget(const Eigen::Vector3d& target_position, const Eigen::Matrix<double,3,3>& target_rotation)
 {
     std::lock_guard<std::mutex> lock(state_mutex_);
+    Eigen::Array<double,9,1> log_data;
     // auto init = std::chrono::steady_clock::now();
     target_pos_ = target_position;
     target_rot_ = target_rotation;
     state_ = controller_->updateTarget(target_pos_, target_rot_);
     target_thetta_ = controller_->getTargetThetta();
+
+    const double time_us = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - init_time_).count());
+
+    log_data << 4, time_us,
+                target_pos_[0], target_pos_[1], target_pos_[2],
+                0., 0., 0., 0.;
+    log_.setData(log_data);
     // std::cout << "set: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - init).count() << "\n";
 }

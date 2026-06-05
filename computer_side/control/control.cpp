@@ -21,10 +21,13 @@ solver_(urdf_name)
     // damping_ << 2.0, 2.0, 2.0, 1.6, 1.2, 0.8, 0.6;
     stiffness_ << 500, 500, 500, 300, 300, 150, 150;
     damping_ << 30, 30, 30, 20, 20, 10, 10;
+    cabinet_stiffness_ << 500., 500., 500., 300., 300., 150., 150.;
 
     eps_max_ << e_max_, e_max_, e_max_, e_max_, e_max_, e_max_, e_max_;
     eps_min_ << e_min_, e_min_, e_min_, e_min_, e_min_, e_min_, e_min_;
     max_delta_ << max_d_, max_d_, max_d_, max_d_, max_d_, max_d_, max_d_;
+    delta_max_ = max_joint_velocity_ * time_tick_; // * cabinet_stiffness_ / cabinet_stiffness_.maxCoeff();
+    delta_min_ = delta_max_ * min_delta_ratio_;
 
     solver_.setQ(first_thetta);
     solver_.FK();
@@ -153,12 +156,12 @@ Eigen::Array<double,N_JOINTS,1> Control::getDelta(const Eigen::Array<double,N_JO
         else if(std::abs(delta[i]) < eps_max_[i])
         {
             double ratio = (std::abs(delta[i]) - eps_min_[i]) / (eps_max_[i] - eps_min_[i]);
-            double step = v_min_ + (v_max_ - v_min_) * ratio;
+            double step = delta_min_[i] + (delta_max_[i] - delta_min_[i]) * ratio;
             vel[i] = std::min(step, std::abs(delta[i])) * sign(delta[i]);
         }
         else
         {
-            vel[i] = std::min(v_max_, std::abs(delta[i])) * sign(delta[i]);
+            vel[i] = std::min(delta_max_[i], std::abs(delta[i])) * sign(delta[i]);
         }
 
     }

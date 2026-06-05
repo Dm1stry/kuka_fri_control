@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.genfromtxt("build/Logs.txt", delimiter=",")
+data = np.genfromtxt("build/controller_log.csv", delimiter=",")
 
 print(data)
 
@@ -16,6 +16,12 @@ target_torque = data[data[:,0]==2,2:]
 
 t_current_torque = data[data[:,0]==3, 1]
 current_torque = data[data[:,0]==3,2:]
+
+t_set_target_pos = data[data[:,0]==4, 1]
+set_target_pos = data[data[:,0]==4,2:5]
+
+t_set_current_pos = data[data[:,0]==5, 1]
+set_current_pos = data[data[:,0]==5,2:5]
 
 derivative_current_q = np.gradient(current_q)
 derivative_target_q = np.gradient(target_q)
@@ -34,6 +40,12 @@ plt.plot(t_target_torque[:], target_torque[:, 6])
 plt.legend(["target 0", "target 1", "target 2", "target 3", "target 4", "target 5", "target 6",
             "current 0", "current 1", "current 2", "current 3", "current 4", "current 5", "current 6"])
 
+plt.figure(2)
+plt.plot(t_set_target_pos, set_target_pos)
+plt.plot(t_set_current_pos, set_current_pos)
+plt.legend(["set target x", "set target y", "set target z",
+            "set current x", "set current y", "set current z"])
+
 # plt.figure(3)
 # plt.plot(t_target_q[:], derivative_target_q[0][:,0])
 # plt.plot(t_current_q[:], derivative_current_q[0][:,0])
@@ -41,5 +53,4 @@ plt.legend(["target 0", "target 1", "target 2", "target 3", "target 4", "target 
 
 
 plt.show()
-
 

@@ -31,6 +31,7 @@ set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
 set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
 set(KUKAFRI ${CMAKE_CURRENT_SOURCE_DIR}/kukafri)
 set(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/logger)
+set(TRAJECTORY ${CMAKE_CURRENT_SOURCE_DIR}/trajectory)
 option(BUILD_PYTHON_BINDINGS "Build pybind11 Python module" OFF)
 
 if(${COMPILE_TORQUE_OVERLAY})
@@ -52,6 +53,7 @@ set(CORE_SOURCES
 	${KUKAFRI}/helper_functions.hpp
 
 	${LOGGER}/logger.hpp				${LOGGER}/logger.cpp
+	${TRAJECTORY}/trajectory_generator.hpp	${TRAJECTORY}/trajectory_generator.cpp
 	# Сюда сорцы
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 	${SERVER}/json.hpp

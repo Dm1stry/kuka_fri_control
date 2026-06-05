@@ -44,6 +44,8 @@ private:
     bool use_task_space_;
     double dt_;
     const std::string urdf_name_;
+    logger::FileLogger log_;
+    std::chrono::steady_clock::time_point init_time_;
 
     int state_;
 
@@ -54,7 +56,9 @@ private:
 
     Eigen::Array<double,7,1> initial_thetta_;
     Eigen::Array<double,7,1> current_thetta_;
+    Eigen::Array<double,7,1> commanded_thetta_;
     Eigen::Array<double,7,1> target_thetta_;
+    Eigen::Array<double,7,1> zero_thetta_;
     
     Eigen::Array<double,7,1> current_torque_;
     Eigen::Array<double,7,1> target_torque_;

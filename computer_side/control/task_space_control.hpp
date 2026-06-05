@@ -2,6 +2,7 @@
 #define TASK_SPACE_CONTROL_HPP
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 #include <drake/multibody/plant/multibody_plant.h>
 #include <drake/multibody/parsing/parser.h>
@@ -51,6 +52,7 @@ namespace control
 
     private:
         Eigen::MatrixXd pseudoInverse(const Eigen::MatrixXd &matrix, double tolerance = 1e-6) const;
+        Eigen::Matrix<double,N_JOINTS,6> dampedPseudoInverse(const Eigen::Matrix<double,6,N_JOINTS> &matrix) const;
         Eigen::Matrix<double,6,N_JOINTS> calcJacobian(const Eigen::Array<double,N_JOINTS,1> &q);
         Eigen::Matrix<double,6,1> calcTaskError(const Eigen::Matrix3d &current_rotation,
                                                 const Eigen::Vector3d &current_position) const;
@@ -61,6 +63,13 @@ namespace control
         Eigen::Array<double,N_JOINTS,1> getJointDelta(const Eigen::Array<double,N_JOINTS,1> &target_q,
                                                       const Eigen::Array<double,N_JOINTS,1> &current_q) const;
         void updateVirtualTarget();
+        Eigen::Array<double,N_JOINTS,1> calcJointLimitDelta(const Eigen::Array<double,N_JOINTS,1> &q) const;
+        Eigen::Array<double,N_JOINTS,1> calcSingularityAvoidanceDelta(const Eigen::Array<double,N_JOINTS,1> &q);
+        Eigen::Array<double,N_JOINTS,1> calcJointLimitTorque(const Eigen::Array<double,N_JOINTS,1> &q,
+                                                             const Eigen::Array<double,N_JOINTS,1> &dq) const;
+        double calcMinSingularValue(const Eigen::Array<double,N_JOINTS,1> &q);
+        Eigen::Array<double,N_JOINTS,1> calcSingularityAvoidanceTorque(const Eigen::Array<double,N_JOINTS,1> &q,
+                                                                       const Eigen::Array<double,N_JOINTS,1> &dq);
         Eigen::Array<double,N_JOINTS,1> calcBiasTorque(const Eigen::Array<double,N_JOINTS,1> &q,
                                                        const Eigen::Array<double,N_JOINTS,1> &dq);
 
@@ -69,17 +78,20 @@ namespace control
 
         std::string base_frame_;
         std::string end_effector_frame_;
-        double time_tick_ = 0.005;
-        double v_min_ = 0.001;
-        double v_max_ = 0.003;
+        double time_tick_ = 0.002;
+        double max_joint_velocity_ = 0.6;
+        double min_delta_ratio_ = 1. / 10.;
         double linear_step_min_ = 0.0005;
-        double linear_step_max_ = 0.005;
-        double angular_step_min_ = 0.05 * M_PI / 180.;
-        double angular_step_max_ = 0.2 * M_PI / 180.;
-        double e_min_ = 0.05 * M_PI / 180.;
-        double e_max_ = 0.1 * M_PI / 180.;
+        double linear_step_max_ = 0.001;
+        double angular_step_min_ = 0.001 * M_PI / 180.;
+        double angular_step_max_ = 0.05 * M_PI / 180.;
+        double e_min_ = 0.001 * M_PI / 180.;
+        double e_max_ = 0.005 * M_PI / 180.;
         double target_pos_eps_ = 1e-4;
-        double target_rot_eps_ = 1e-3;
+        double target_rot_eps_ = 1e-4;
+        double target_filter_alpha_ = 0.85;
+        double virtual_sync_alpha_ = 0.02;
+        double dls_lambda_ = 0.05;
 
         Eigen::Vector3d target_position_;
         Eigen::Matrix3d target_rotation_;
@@ -102,8 +114,24 @@ namespace control
         Eigen::Array<double,N_JOINTS,1> q_ref_;
         Eigen::Array<double,N_JOINTS,1> nullspace_stiffness_;
         Eigen::Array<double,N_JOINTS,1> nullspace_damping_;
+        Eigen::Array<double,N_JOINTS,1> joint_min_;
+        Eigen::Array<double,N_JOINTS,1> joint_max_;
+        Eigen::Array<double,N_JOINTS,1> joint_limit_stiffness_;
+        Eigen::Array<double,N_JOINTS,1> joint_limit_damping_;
+        Eigen::Array<double,N_JOINTS,1> joint_limit_torque_max_;
+        Eigen::Array<double,N_JOINTS,1> cabinet_stiffness_;
+        Eigen::Array<double,N_JOINTS,1> delta_min_;
+        Eigen::Array<double,N_JOINTS,1> delta_max_;
+        double joint_limit_margin_ = 20. * M_PI / 180.;
+        double singularity_sigma_threshold_ = 0.08;
+        double singularity_gradient_step_ = 1e-4;
+        double singularity_stiffness_ = 250.;
+        double singularity_damping_ = 4.;
+        double singularity_torque_max_ = 30.;
 
         bool use_bias_compensation_ = true;
+        bool use_singularity_avoidance_ = true;
+        bool target_filter_initialized_ = false;
         bool state_initialized_ = false;
         bool virtual_target_initialized_ = false;
         int state_ = 1;
