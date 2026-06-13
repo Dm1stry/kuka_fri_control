@@ -214,7 +214,7 @@ Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque(
             Eigen::Matrix<double,N_JOINTS,N_JOINTS>::Identity() - J_pinv * J;
         const Eigen::Matrix<double,N_JOINTS,1> tau_secondary =
             (nullspace_stiffness_ * (q_ref_ - q) - nullspace_damping_ * dq +
-             calcJointLimitTorque(q, dq) + calcSingularityAvoidanceTorque(q, dq)).matrix();
+             calcJointLimitTorque(q, dq)); // + calcSingularityAvoidanceTorque(q, dq)).matrix();
 
         tau += nullspace * tau_secondary;
     }
@@ -334,29 +334,22 @@ Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getJointDelta(
     const Eigen::Array<double,N_JOINTS,1> &current_q) const
 {
     Eigen::Array<double,N_JOINTS,1> delta = target_q - current_q;
-    Eigen::Array<double,N_JOINTS,1> step;
+    if (delta.abs().maxCoeff() <= e_min_)
+    {
+        return Eigen::Array<double,N_JOINTS,1>::Zero();
+    }
+
+    double max_ratio = 1.;
 
     for (int i = 0; i < N_JOINTS; ++i)
     {
-        const double abs_delta = std::abs(delta[i]);
-
-        if (abs_delta <= e_min_)
+        if (delta_max_[i] > 0.)
         {
-            step[i] = 0.;
-        }
-        else if (abs_delta < e_max_)
-        {
-            const double ratio = (abs_delta - e_min_) / (e_max_ - e_min_);
-            const double velocity = delta_min_[i] + (delta_max_[i] - delta_min_[i]) * ratio;
-            step[i] = std::min(velocity, abs_delta) * (delta[i] > 0. ? 1. : -1.);
-        }
-        else
-        {
-            step[i] = std::min(delta_max_[i], abs_delta) * (delta[i] > 0. ? 1. : -1.);
+            max_ratio = std::max(max_ratio, std::abs(delta[i]) / delta_max_[i]);
         }
     }
 
-    return step;
+    return delta / max_ratio;
 }
 
 void TaskSpaceControl::updateVirtualTarget()
@@ -400,7 +393,7 @@ void TaskSpaceControl::updateVirtualTarget()
         calcJointLimitDelta(virtual_q_);
         // calcSingularityAvoidanceDelta(virtual_q_);
     const Eigen::Matrix<double,N_JOINTS,1> q_delta =
-        J_pinv * step_error; // + nullspace * q_secondary.matrix();
+        J_pinv * step_error + nullspace * q_secondary.matrix();
     const Eigen::Array<double,N_JOINTS,1> q_command = virtual_q_ + q_delta.array();
 
     virtual_q_ += getJointDelta(q_command, virtual_q_);

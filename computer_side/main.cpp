@@ -11,11 +11,11 @@ using namespace server;
 
 int main(int argc, char **argv)
 {
-    // auto mode = KUKA_CONTROL::TORQUE;
-    auto mode = KUKA_CONTROL::JOINT_POSITION;
+    auto mode = KUKA_CONTROL::TORQUE;
+    // auto mode = KUKA_CONTROL::JOINT_POSITION;
 
-    bool use_task_space = true;
-    bool use_udp_source = true;
+    bool use_task_space = false;
+    bool use_udp_source = false;
 
     // --------------------------- Инициализация сервера
 
@@ -45,9 +45,9 @@ int main(int argc, char **argv)
     trajectory::TrajectoryGenerator trajectory_generator(
         target_pos,
         target_rot,
-        trajectory::TrajectoryType::CircleXY,
+        trajectory::TrajectoryType::CircleXYZ,
         0.075,
-        0.5);
+        0.3);
 
     while (true)
     {

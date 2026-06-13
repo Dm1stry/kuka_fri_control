@@ -172,7 +172,8 @@
   <joint name="iiwa_joint_ee" type="fixed">
     <parent link="iiwa_link_7"/>
     <child link="iiwa_link_ee"/>
-    <origin rpy="0 0 0" xyz="0 0 0.045"/>
+    <!-- <origin rpy="0 0 0" xyz="0 0 0.045"/> -->
+    <origin rpy="0 0 0" xyz="0 0 0.2"/>
   </joint>
   <link name="iiwa_link_ee">
     </link>

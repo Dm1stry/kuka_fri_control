@@ -20,7 +20,7 @@ solver_(urdf_name)
     // stiffness_ << 25., 25., 25., 20., 15., 10., 8.;
     // damping_ << 2.0, 2.0, 2.0, 1.6, 1.2, 0.8, 0.6;
     stiffness_ << 500, 500, 500, 300, 300, 150, 150;
-    damping_ << 30, 30, 30, 20, 20, 10, 10;
+    damping_ << 50, 50, 50, 30, 30, 15, 15;
     cabinet_stiffness_ << 500., 500., 500., 300., 300., 150., 150.;
 
     eps_max_ << e_max_, e_max_, e_max_, e_max_, e_max_, e_max_, e_max_;

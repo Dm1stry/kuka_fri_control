@@ -52,6 +52,12 @@ namespace trajectory
                 target_position.y() += ramp * amplitude_ * std::sin(phase);
                 break;
 
+            case TrajectoryType::CircleXYZ:
+                target_position.x() += ramp * amplitude_ * (1.0 - std::cos(phase));
+                target_position.y() += ramp * amplitude_ * std::sin(phase);
+                target_position.z() += ramp * amplitude_ * std::sin(phase + std::numbers::pi / 2.0);
+                break;
+
             case TrajectoryType::LineY:
                 target_position.y() += ramp * amplitude_ * std::sin(phase);
                 break;

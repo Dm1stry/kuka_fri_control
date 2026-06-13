@@ -84,13 +84,13 @@ namespace control
         double linear_step_min_ = 0.0005;
         double linear_step_max_ = 0.001;
         double angular_step_min_ = 0.001 * M_PI / 180.;
-        double angular_step_max_ = 0.05 * M_PI / 180.;
+        double angular_step_max_ = 0.1 * M_PI / 180.;
         double e_min_ = 0.001 * M_PI / 180.;
         double e_max_ = 0.005 * M_PI / 180.;
         double target_pos_eps_ = 1e-4;
         double target_rot_eps_ = 1e-4;
         double target_filter_alpha_ = 0.85;
-        double virtual_sync_alpha_ = 0.02;
+        double virtual_sync_alpha_ = 1.0;
         double dls_lambda_ = 0.05;
 
         Eigen::Vector3d target_position_;
