@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-data = np.genfromtxt("build/controller_log.csv", delimiter=",")
+data = np.genfromtxt("js_pos_circle.csv", delimiter=",")
 
 print(data)
 

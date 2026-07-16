@@ -14,14 +14,16 @@ solver_(urdf_name)
     current_torque_ << 0., 0., 0., 0., 0., 0., 0.;
     previous_current_thetta_ = first_thetta;
     previous_target_thetta_ = first_thetta;
+    filtered_current_velocity_ << 0., 0., 0., 0., 0., 0., 0.;
     target_torque_ << 0., 0., 0., 0., 0., 0., 0.;
     target_thetta_ = first_thetta;
 
     // stiffness_ << 25., 25., 25., 20., 15., 10., 8.;
     // damping_ << 2.0, 2.0, 2.0, 1.6, 1.2, 0.8, 0.6;
-    stiffness_ << 500, 500, 500, 300, 300, 150, 150;
-    damping_ << 50, 50, 50, 30, 30, 15, 15;
+    stiffness_ << 300, 300, 300, 150, 150, 75, 75;
+    damping_ << 30, 30, 30, 15, 15, 7.5, 7.5;
     cabinet_stiffness_ << 500., 500., 500., 300., 300., 150., 150.;
+    torque_rate_limit_ << 3.0, 3.0, 3.0, 3.0, 3.0, 2.0, 2.0;
 
     eps_max_ << e_max_, e_max_, e_max_, e_max_, e_max_, e_max_, e_max_;
     eps_min_ << e_min_, e_min_, e_min_, e_min_, e_min_, e_min_, e_min_;
@@ -67,16 +69,43 @@ size_t Control::size()
 
 int Control::updateTarget(const Eigen::Vector3d &target_pos, const Eigen::Matrix<double,3,3> &target_rot)
 {
-    const bool same_position = (target_pos - target_pos_).cwiseAbs().maxCoeff() <= target_pos_eps_;
-    const bool same_rotation = (target_rot - target_rot_).cwiseAbs().maxCoeff() <= target_rot_eps_;
+    Eigen::Vector3d filtered_target_pos;
+    Eigen::Matrix3d filtered_target_rot;
+
+    if (!target_filter_initialized_)
+    {
+        filtered_target_pos = target_pos;
+        filtered_target_rot = target_rot;
+        target_filter_initialized_ = true;
+    }
+    else
+    {
+        const double new_target_weight = 1. - target_filter_alpha_;
+        filtered_target_pos = target_filter_alpha_ * target_pos_ + new_target_weight * target_pos;
+
+        Eigen::Quaterniond current_target(target_rot_);
+        Eigen::Quaterniond new_target(target_rot);
+        current_target.normalize();
+        new_target.normalize();
+
+        if (current_target.dot(new_target) < 0.)
+        {
+            new_target.coeffs() *= -1.;
+        }
+
+        filtered_target_rot = current_target.slerp(new_target_weight, new_target).normalized().toRotationMatrix();
+    }
+
+    const bool same_position = (filtered_target_pos - target_pos_).cwiseAbs().maxCoeff() <= target_pos_eps_;
+    const bool same_rotation = (filtered_target_rot - target_rot_).cwiseAbs().maxCoeff() <= target_rot_eps_;
 
     if (same_position && same_rotation)
     {
         return ik_state_;
     }
 
-    target_pos_ = target_pos;
-    target_rot_ = target_rot;
+    target_pos_ = filtered_target_pos;
+    target_rot_ = filtered_target_rot;
 
     solver_.setPositionVector(target_pos_);
     solver_.setRotationMatrix(target_rot_);
@@ -156,7 +185,8 @@ Eigen::Array<double,N_JOINTS,1> Control::getDelta(const Eigen::Array<double,N_JO
         else if(std::abs(delta[i]) < eps_max_[i])
         {
             double ratio = (std::abs(delta[i]) - eps_min_[i]) / (eps_max_[i] - eps_min_[i]);
-            double step = delta_min_[i] + (delta_max_[i] - delta_min_[i]) * ratio;
+            ratio = ratio * ratio * (3. - 2. * ratio);
+            double step = delta_max_[i] * ratio;
             vel[i] = std::min(step, std::abs(delta[i])) * sign(delta[i]);
         }
         else
@@ -184,20 +214,35 @@ bool Control::getDone()
 
 Eigen::Array<double,N_JOINTS,1>& Control::getTorque(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta)
 {
-    Eigen::Array<double,N_JOINTS,1> current_velocity;
+    Eigen::Array<double,N_JOINTS,1> raw_current_velocity;
 
     if (!torque_initialized_)
     {
-        current_velocity << 0., 0., 0., 0., 0., 0., 0.;
+        raw_current_velocity << 0., 0., 0., 0., 0., 0., 0.;
+        filtered_current_velocity_ = raw_current_velocity;
         torque_initialized_ = true;
     }
     else
     {
-        current_velocity = (current_thetta - previous_current_thetta_) / time_tick_;
+        raw_current_velocity = (current_thetta - previous_current_thetta_) / time_tick_;
+        filtered_current_velocity_ =
+            velocity_filter_alpha_ * filtered_current_velocity_ +
+            (1. - velocity_filter_alpha_) * raw_current_velocity;
     }
 
     Eigen::Array<double,N_JOINTS,1> position_error = next_thetta - current_thetta;
-    target_torque_ = stiffness_ * position_error - damping_ * current_velocity;
+    Eigen::Array<double,N_JOINTS,1> desired_torque =
+        stiffness_ * position_error - damping_ * filtered_current_velocity_;
+
+    for(int i = 0; i < N_JOINTS; ++i)
+    {
+        const double torque_delta = desired_torque[i] - target_torque_[i];
+        const double limited_delta = std::clamp(
+            torque_delta,
+            -torque_rate_limit_[i],
+            torque_rate_limit_[i]);
+        target_torque_[i] += limited_delta;
+    }
 
     // for(int i = 0; i < N_JOINTS; ++i)
     // {

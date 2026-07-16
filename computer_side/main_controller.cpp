@@ -160,6 +160,11 @@ void KukaController::loop(std::stop_token stop_token)
                 current_pos_[0], current_pos_[1], current_pos_[2],
                 0., 0., 0., 0.;
             log_.setData(log_data);
+
+            log_data << 6, time_us,
+                force_msg_[3], force_msg_[4], force_msg_[5],
+                0., 0., 0., 0.;
+            log_.setData(log_data);
         }
 
         // std::cout << "loop: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - init).count() << "\n";

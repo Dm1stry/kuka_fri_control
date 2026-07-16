@@ -2,6 +2,7 @@
 #define TRAJECTORY
 
 #include <Eigen/Dense>
+#include <Eigen/Geometry>
 #include <list>
 #include <iostream>
 #include <cmath>
@@ -28,13 +29,19 @@ namespace control
 
             double time_tick_ = 0.002;
             double max_joint_velocity_ = 0.5;
-            double min_delta_ratio_ = 1. / 3.;
+            double min_delta_ratio_ = 1. / 10.;
 
-            const double e_min_ = 0.05*M_PI/180;
-            const double e_max_ = 0.1*M_PI/180;
+            // const double e_min_ = 0.001*M_PI/180;
+            // const double e_max_ = 0.005*M_PI/180;
+
+            const double e_min_ = 0.005*M_PI/180;
+            const double e_max_ = 0.01*M_PI/180;
+
             const double max_d_ = 15*M_PI/180;
             const double target_pos_eps_ = 1e-4;
             const double target_rot_eps_ = 1e-3;
+            double target_filter_alpha_ = 0.85;
+            double velocity_filter_alpha_ = 0.85;
 
             Eigen::Array<double,N_JOINTS,1> eps_min_;
             Eigen::Array<double,N_JOINTS,1> eps_max_;
@@ -42,6 +49,7 @@ namespace control
             Eigen::Array<double,N_JOINTS,1> delta_min_;
             Eigen::Array<double,N_JOINTS,1> delta_max_;
             Eigen::Array<double,N_JOINTS,1> cabinet_stiffness_;
+            Eigen::Array<double,N_JOINTS,1> torque_rate_limit_;
 
             std::list<Eigen::Array<double,N_JOINTS,1>> points_;
             bool done_ = true;
@@ -52,6 +60,7 @@ namespace control
             Eigen::Array<double,N_JOINTS,1> current_torque_;
             Eigen::Array<double,N_JOINTS,1> previous_current_thetta_;
             Eigen::Array<double,N_JOINTS,1> previous_target_thetta_;
+            Eigen::Array<double,N_JOINTS,1> filtered_current_velocity_;
             Eigen::Array<double,N_JOINTS,1> target_torque_;
             Eigen::Array<double,N_JOINTS,1> target_thetta_;
 
@@ -66,6 +75,7 @@ namespace control
             Eigen::Array<double,N_JOINTS,1> stiffness_;
             Eigen::Array<double,N_JOINTS,1> damping_;
             bool torque_initialized_ = false;
+            bool target_filter_initialized_ = false;
 
         public:
             Control(const Eigen::Array<double,N_JOINTS,1> &first_thetta, double& time_tick, const std::string &urdf_name = "../robots/iiwa.urdf");

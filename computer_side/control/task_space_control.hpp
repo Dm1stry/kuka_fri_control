@@ -63,6 +63,7 @@ namespace control
         Eigen::Array<double,N_JOINTS,1> getJointDelta(const Eigen::Array<double,N_JOINTS,1> &target_q,
                                                       const Eigen::Array<double,N_JOINTS,1> &current_q) const;
         void updateVirtualTarget();
+        void clampVirtualJointPosition();
         Eigen::Array<double,N_JOINTS,1> calcJointLimitDelta(const Eigen::Array<double,N_JOINTS,1> &q) const;
         Eigen::Array<double,N_JOINTS,1> calcSingularityAvoidanceDelta(const Eigen::Array<double,N_JOINTS,1> &q);
         Eigen::Array<double,N_JOINTS,1> calcJointLimitTorque(const Eigen::Array<double,N_JOINTS,1> &q,
@@ -79,16 +80,16 @@ namespace control
         std::string base_frame_;
         std::string end_effector_frame_;
         double time_tick_ = 0.002;
-        double max_joint_velocity_ = 0.6;
+        double max_joint_velocity_ = 0.5;
         double min_delta_ratio_ = 1. / 10.;
         double linear_step_min_ = 0.0005;
         double linear_step_max_ = 0.001;
         double angular_step_min_ = 0.001 * M_PI / 180.;
-        double angular_step_max_ = 0.1 * M_PI / 180.;
-        double e_min_ = 0.001 * M_PI / 180.;
-        double e_max_ = 0.005 * M_PI / 180.;
+        double angular_step_max_ = 0.05 * M_PI / 180.;
+        double e_min_ = 0.01 * M_PI / 180.;
+        double e_max_ = 0.05 * M_PI / 180.;
         double target_pos_eps_ = 1e-4;
-        double target_rot_eps_ = 1e-4;
+        double target_rot_eps_ = 1e-2;
         double target_filter_alpha_ = 0.85;
         double virtual_sync_alpha_ = 1.0;
         double dls_lambda_ = 0.05;

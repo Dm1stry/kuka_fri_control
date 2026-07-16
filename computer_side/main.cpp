@@ -11,12 +11,12 @@ using namespace server;
 
 int main(int argc, char **argv)
 {
-    auto mode = KUKA_CONTROL::TORQUE;
-    // auto mode = KUKA_CONTROL::JOINT_POSITION;
+    // auto mode = KUKA_CONTROL::TORQUE;
+    auto mode = KUKA_CONTROL::JOINT_POSITION;
 
-    bool use_task_space = false;
+    bool use_task_space = true;
     bool use_udp_source = false;
-
+ 
     // --------------------------- Инициализация сервера
 
     UDPServer<12,25> server("127.0.0.1", 8081, "127.0.0.1", 8080);
@@ -42,12 +42,27 @@ int main(int argc, char **argv)
                   obs_msg[13], obs_msg[14], obs_msg[15],
                   obs_msg[16], obs_msg[17], obs_msg[18];
 
+
+    // trajectory::TrajectoryGenerator trajectory_generator(
+    //     target_pos,
+    //     target_rot,
+    //     trajectory::TrajectoryType::SquareXYZ,
+    //     0.05,
+    //     0.15);
+
     trajectory::TrajectoryGenerator trajectory_generator(
         target_pos,
         target_rot,
         trajectory::TrajectoryType::CircleXYZ,
-        0.075,
-        0.3);
+        0.05,
+        0.15);
+    
+    // trajectory::TrajectoryGenerator trajectory_generator(
+    //     target_pos,
+    //     target_rot,
+    //     trajectory::TrajectoryType::LineY,
+    //     0.15,
+    //     0.4);
 
     while (true)
     {
@@ -79,10 +94,10 @@ int main(int argc, char **argv)
         controller.setTarget(target_pos, target_rot);
 
         obs_msg = controller.getObservation();
-        if (use_udp_source)
-        {
-            server.setMsg(obs_msg);
-        }
+        // if (use_udp_source)
+        // {
+        //     server.setMsg(obs_msg);
+        // }
 
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }

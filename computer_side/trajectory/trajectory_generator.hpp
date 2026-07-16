@@ -15,7 +15,8 @@ namespace trajectory
         SineZ,
         SineRotationZ,
         CircleXYRotationXY,
-        CircleXYZ
+        CircleXYZ,
+        SquareXYZ
     };
 
     class TrajectoryGenerator

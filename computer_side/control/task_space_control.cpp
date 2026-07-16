@@ -31,8 +31,8 @@ time_tick_(time_tick)
     force_.setZero();
     target_wrench_.setZero();
 
-    stiffness_ << 80., 80., 80., 500., 500., 500.;
-    damping_ << 8., 8., 8., 45., 45., 45.;
+    stiffness_ << 80., 80., 80., 750., 750., 750.;
+    damping_ << 8., 8., 8., 75., 75., 75.;
 
     current_q_.setZero();
     current_dq_.setZero();
@@ -163,6 +163,7 @@ void TaskSpaceControl::updateCurrentState(const Eigen::Array<double,N_JOINTS,1> 
         virtual_q_ = current_q_;
         virtual_target_position_ = current_position_;
         virtual_target_rotation_ = current_rotation_;
+        clampVirtualJointPosition();
         virtual_target_initialized_ = true;
     }
 
@@ -397,6 +398,7 @@ void TaskSpaceControl::updateVirtualTarget()
     const Eigen::Array<double,N_JOINTS,1> q_command = virtual_q_ + q_delta.array();
 
     virtual_q_ += getJointDelta(q_command, virtual_q_);
+    clampVirtualJointPosition();
 
     virtual_target_position_ += step_error.tail<3>();
 
@@ -435,6 +437,11 @@ void TaskSpaceControl::updateVirtualTarget()
             .slerp(virtual_sync_alpha_, actual_virtual_rotation_q)
             .normalized()
             .toRotationMatrix();
+}
+
+void TaskSpaceControl::clampVirtualJointPosition()
+{
+    virtual_q_ = virtual_q_.max(joint_min_).min(joint_max_);
 }
 
 Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::calcJointLimitDelta(

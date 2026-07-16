@@ -58,6 +58,45 @@ namespace trajectory
                 target_position.z() += ramp * amplitude_ * std::sin(phase + std::numbers::pi / 2.0);
                 break;
 
+            case TrajectoryType::SquareXYZ:
+            {
+                const double cycle = std::fmod(frequency_ * time, 1.0);
+                const double square_phase = 4.0 * cycle;
+                const int side = static_cast<int>(square_phase);
+                const double side_progress = square_phase - side;
+                const double side_length = 2.0 * amplitude_;
+                double x_offset = 0.0;
+                double y_offset = 0.0;
+
+                switch (side)
+                {
+                    case 0:
+                        x_offset = side_length * side_progress;
+                        y_offset = 0.0;
+                        break;
+
+                    case 1:
+                        x_offset = side_length;
+                        y_offset = side_length * side_progress;
+                        break;
+
+                    case 2:
+                        x_offset = side_length * (1.0 - side_progress);
+                        y_offset = side_length;
+                        break;
+
+                    default:
+                        x_offset = 0.0;
+                        y_offset = side_length * (1.0 - side_progress);
+                        break;
+                }
+
+                target_position.x() += ramp * x_offset;
+                target_position.y() += ramp * y_offset;
+                target_position.z() += ramp * amplitude_ * std::sin(phase);
+                break;
+            }
+
             case TrajectoryType::LineY:
                 target_position.y() += ramp * amplitude_ * std::sin(phase);
                 break;
