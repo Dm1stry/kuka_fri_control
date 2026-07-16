@@ -35,7 +35,10 @@ void KukaFRIController::start()
 void KukaFRIController::stop()
 {
 	running_enabled_.store(false);
-	lbr_application_thread_.join();
+	if (lbr_application_thread_.joinable())
+	{
+		lbr_application_thread_.join();
+	}
 }
 
 bool KukaFRIController::setTargetJointPosition(jarray target_joint_position)

@@ -1,129 +1,112 @@
-#include "kukafri/kukafricontroller.hpp"
-#include <cmath>
-#include <thread>
-#include <iostream>
-#include <iomanip>
 #include <chrono>
-#include <fstream>
+#include <iostream>
+#include <thread>
 
-#include "logger/jarraylogger.hpp"
+#include "main_controller.hpp"
+#include "trajectory/trajectory_generator.hpp"
 #include "udp/udp_server.hpp"
-#include "planer/trajectory.hpp"
-#include "kukafri/helper_functions.hpp"
 
 using namespace KUKA_CONTROL;
 using namespace server;
 
 int main(int argc, char **argv)
-{   
+{
+    // auto mode = KUKA_CONTROL::TORQUE;
+    auto mode = KUKA_CONTROL::JOINT_POSITION;
 
+    bool use_task_space = true;
+    bool use_udp_source = false;
+ 
     // --------------------------- Инициализация сервера
 
-    UDPServer<7,14> server("127.0.0.1", 8081, "127.0.0.1", 8080);
-    server.start();
+    UDPServer<12,25> server("127.0.0.1", 8081, "127.0.0.1", 8080);
+    if (use_udp_source)
+    {
+        server.start();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-    std::cout << "Try" << std::endl;
+        std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        std::cout << "Server started" << std::endl;
+    }
 
-    KukaFRIController kuka(KUKA_CONTROL::JOINT_POSITION);
-    kuka.start();
+    KukaController controller(mode, "../robots/iiwa.urdf", use_task_space);
+    controller.start();
 
-    // --------------------------- Настройки
+    Eigen::Vector3d target_pos;
+    Eigen::Matrix<double,3,3> target_rot;
 
-    jarray current_position;
-    jarray initial_position;
+    Eigen::Array<double,12,1> position_msg;
+    Eigen::Array<double,25,1> obs_msg = controller.getObservation();
 
-    Eigen::Array<double,7,1> current_point;
-    Eigen::Array<double,7,1> initial_point;
-    Eigen::Array<double,7,1> temp;
-    Eigen::Array<double,7,1> delta;
-    Eigen::Array<double,7,1> next_point;
+    target_pos << obs_msg[7], obs_msg[8], obs_msg[9];
+    target_rot << obs_msg[10], obs_msg[11], obs_msg[12],
+                  obs_msg[13], obs_msg[14], obs_msg[15],
+                  obs_msg[16], obs_msg[17], obs_msg[18];
+
+
+    // trajectory::TrajectoryGenerator trajectory_generator(
+    //     target_pos,
+    //     target_rot,
+    //     trajectory::TrajectoryType::SquareXYZ,
+    //     0.05,
+    //     0.15);
+
+    trajectory::TrajectoryGenerator trajectory_generator(
+        target_pos,
+        target_rot,
+        trajectory::TrajectoryType::CircleXYZ,
+        0.05,
+        0.15);
     
-    int n_t = 0;
-
-    Eigen::Array<double,7,1> current_torque; 
-    Eigen::Array<double,14,1> msg_torque; 
-
-    const double e = 0.1*M_PI/180;
-    const double df = 15*M_PI/180;
-
-    Eigen::Array<double,7,1> eps;
-    Eigen::Array<double,7,1> diff;
-
-    eps << e, e, e, e, e, e, e;
-    diff << df, df, df, df, df, df, df;
-
-    initial_position = kuka.getMeasuredJointPosition();
-    kuka.setTargetJointPosition(initial_position);
-
-    current_position = initial_position;
-    initial_point = stdArrayToEigenArray(initial_position);
-    next_point = initial_point;
-    temp = initial_point;
-
-    trajectory::Trajectory planer(initial_point);
-    
-    // --------------------------- Инициализация логеров
-
-    // LOGGER::JArrayLogger pos_logger("actual_position");
-    // LOGGER::JArrayLogger commanded_pos_logger("commanded_position");
-    // LOGGER::JArrayLogger delta_pos_logger("delta_position");
-
-    // trajectory::waitConnection();
-
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-    std::cout << "Старт" << std::endl;
+    // trajectory::TrajectoryGenerator trajectory_generator(
+    //     target_pos,
+    //     target_rot,
+    //     trajectory::TrajectoryType::LineY,
+    //     0.15,
+    //     0.4);
 
     while (true)
     {
-        if (server.getMsg(next_point))  // Чтение пришедших по UDP данных
+        if (use_udp_source)
         {
+            if (server.getMsg(position_msg))  // Чтение пришедших по UDP данных
+            {
+                target_pos[0] += position_msg[0];
+                target_pos[1] += position_msg[1];
+                target_pos[2] += position_msg[2];
+
+                target_rot << position_msg[3], position_msg[4], position_msg[5],
+                              position_msg[6], position_msg[7], position_msg[8],
+                              position_msg[9], position_msg[10], position_msg[11];
+            }
+        }
+        else
+        {
+            trajectory_generator.getTarget(target_pos, target_rot);
+        }
+
+        // if (++i > 3000)
+        // {
+        //     target_pos[1] += 0.4;
             
-            std::cout << next_point.transpose() << std::endl;
-            // planer.push(msg_thetta);          
-        };
+        //     i = -10000000;
+        // }
 
-        // ========================================================================================
+        controller.setTarget(target_pos, target_rot);
 
-        current_point = stdArrayToEigenArray(kuka.getMeasuredJointPosition());
-
-        std::cout << "Thetta: " << current_point.transpose()*180/M_PI << std::endl;
-
-        if (!trajectory::eigenArrayDiff(temp,current_point,diff))
-        {
-            delta = planer.getDelta(next_point, temp);
-            temp = temp + delta;
-        }
-
-        // std::cout << "Commanded: " << temp.transpose()*180/M_PI << std::endl;
-
-        kuka.setTargetJointPosition(eigenArrayToStdArray(temp));
-
-        if (trajectory::eigenArrayEqual(temp,next_point,eps))
-        {
-            std::cout << "============================DONE============================" << std::endl;
-        }
-
-        // ========================================================================================
-
-        current_torque = stdArrayToEigenArray(kuka.getExternalJointTorque());
-
-        std::cout << "Torque: " << current_torque.transpose() << std::endl;
-
-        msg_torque << current_point, current_torque;
-
-        server.setMsg(msg_torque);
-
-        // commanded_pos_logger.log(eigenArrayToStdArray(temp));
-        // pos_logger.log(eigenArrayToStdArray(current_point));
-        // delta_pos_logger.log(eigenArrayToStdArray(delta));
+        obs_msg = controller.getObservation();
+        // if (use_udp_source)
+        // {
+        //     server.setMsg(obs_msg);
+        // }
 
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }
 
-    kuka.stop();
-    server.stop();
+    controller.stop();
+    if (use_udp_source)
+    {
+        server.stop();
+    }
 
     return 0;
 }

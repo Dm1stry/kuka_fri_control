@@ -1,0 +1,142 @@
+#ifndef TASK_SPACE_CONTROL_HPP
+#define TASK_SPACE_CONTROL_HPP
+
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
+
+#include <drake/multibody/plant/multibody_plant.h>
+#include <drake/multibody/parsing/parser.h>
+#include <drake/math/rigid_transform.h>
+#include <drake/systems/framework/context.h>
+
+#include <memory>
+#include <string>
+#include <iostream>
+#include <cmath>
+
+#include "control_interface.hpp"
+
+namespace control
+{
+    class TaskSpaceControl : public IControl
+    {
+    public:
+        TaskSpaceControl(const std::string &urdf_name,
+                         const std::string &base_frame = "iiwa_link_0",
+                         const std::string &end_effector_frame = "iiwa_link_ee",
+                         double time_tick = 0.005);
+
+        void setStiffness(const Eigen::Matrix<double,6,1> &stiffness);
+        void setDamping(const Eigen::Matrix<double,6,1> &damping);
+        void setTargetPose(const Eigen::Vector3d &position, const Eigen::Matrix3d &rotation);
+        void setTargetWrench(const Eigen::Matrix<double,6,1> &wrench);
+        void setNullspaceTarget(const Eigen::Array<double,N_JOINTS,1> &q_ref);
+        void setNullspaceGains(const Eigen::Array<double,N_JOINTS,1> &stiffness,
+                               const Eigen::Array<double,N_JOINTS,1> &damping);
+        void useBiasCompensation(bool enabled);
+
+        int updateTarget(const Eigen::Vector3d &target_pos, const Eigen::Matrix<double,3,3> &target_rot) override;
+        void updateCurrentState(const Eigen::Array<double,N_JOINTS,1> &current_thetta,
+                                const Eigen::Array<double,N_JOINTS,1> &current_torque) override;
+        Eigen::Array<double,N_JOINTS,1> getTorque() override;
+        Eigen::Array<double,N_JOINTS,1> getNextPoint() override;
+        Eigen::Array<double,N_JOINTS,1> getTorque(const Eigen::Array<double,N_JOINTS,1> &q,
+                                                  const Eigen::Array<double,N_JOINTS,1> &dq);
+        Eigen::Array<double,N_JOINTS,1> getTargetThetta() const override;
+
+        Eigen::Vector3d getCurrentPosition() const override;
+        Eigen::Matrix3d getCurrentRotation() const override;
+        Eigen::Matrix<double,6,1> getForce() const override;
+        Eigen::Matrix<double,6,1> getTaskError() const;
+        int getState() const override;
+
+    private:
+        Eigen::MatrixXd pseudoInverse(const Eigen::MatrixXd &matrix, double tolerance = 1e-6) const;
+        Eigen::Matrix<double,N_JOINTS,6> dampedPseudoInverse(const Eigen::Matrix<double,6,N_JOINTS> &matrix) const;
+        Eigen::Matrix<double,6,N_JOINTS> calcJacobian(const Eigen::Array<double,N_JOINTS,1> &q);
+        Eigen::Matrix<double,6,1> calcTaskError(const Eigen::Matrix3d &current_rotation,
+                                                const Eigen::Vector3d &current_position) const;
+        Eigen::Matrix<double,6,1> calcTaskErrorToTarget(const Eigen::Matrix3d &current_rotation,
+                                                        const Eigen::Vector3d &current_position,
+                                                        const Eigen::Matrix3d &target_rotation,
+                                                        const Eigen::Vector3d &target_position) const;
+        Eigen::Array<double,N_JOINTS,1> getJointDelta(const Eigen::Array<double,N_JOINTS,1> &target_q,
+                                                      const Eigen::Array<double,N_JOINTS,1> &current_q) const;
+        void updateVirtualTarget();
+        void clampVirtualJointPosition();
+        Eigen::Array<double,N_JOINTS,1> calcJointLimitDelta(const Eigen::Array<double,N_JOINTS,1> &q) const;
+        Eigen::Array<double,N_JOINTS,1> calcSingularityAvoidanceDelta(const Eigen::Array<double,N_JOINTS,1> &q);
+        Eigen::Array<double,N_JOINTS,1> calcJointLimitTorque(const Eigen::Array<double,N_JOINTS,1> &q,
+                                                             const Eigen::Array<double,N_JOINTS,1> &dq) const;
+        double calcMinSingularValue(const Eigen::Array<double,N_JOINTS,1> &q);
+        Eigen::Array<double,N_JOINTS,1> calcSingularityAvoidanceTorque(const Eigen::Array<double,N_JOINTS,1> &q,
+                                                                       const Eigen::Array<double,N_JOINTS,1> &dq);
+        Eigen::Array<double,N_JOINTS,1> calcBiasTorque(const Eigen::Array<double,N_JOINTS,1> &q,
+                                                       const Eigen::Array<double,N_JOINTS,1> &dq);
+
+        drake::multibody::MultibodyPlant<double> plant_;
+        std::unique_ptr<drake::systems::Context<double>> context_;
+
+        std::string base_frame_;
+        std::string end_effector_frame_;
+        double time_tick_ = 0.002;
+        double max_joint_velocity_ = 0.5;
+        double min_delta_ratio_ = 1. / 10.;
+        double linear_step_min_ = 0.0005;
+        double linear_step_max_ = 0.001;
+        double angular_step_min_ = 0.001 * M_PI / 180.;
+        double angular_step_max_ = 0.05 * M_PI / 180.;
+        double e_min_ = 0.01 * M_PI / 180.;
+        double e_max_ = 0.05 * M_PI / 180.;
+        double target_pos_eps_ = 1e-4;
+        double target_rot_eps_ = 1e-2;
+        double target_filter_alpha_ = 0.85;
+        double virtual_sync_alpha_ = 1.0;
+        double dls_lambda_ = 0.05;
+
+        Eigen::Vector3d target_position_;
+        Eigen::Matrix3d target_rotation_;
+        Eigen::Vector3d virtual_target_position_;
+        Eigen::Matrix3d virtual_target_rotation_;
+        Eigen::Vector3d current_position_;
+        Eigen::Matrix3d current_rotation_;
+
+        Eigen::Matrix<double,6,1> stiffness_;
+        Eigen::Matrix<double,6,1> damping_;
+        Eigen::Matrix<double,6,1> target_wrench_;
+        Eigen::Matrix<double,6,1> task_error_;
+        Eigen::Matrix<double,6,1> force_;
+
+        Eigen::Array<double,N_JOINTS,1> current_q_;
+        Eigen::Array<double,N_JOINTS,1> current_dq_;
+        Eigen::Array<double,N_JOINTS,1> previous_q_;
+        Eigen::Array<double,N_JOINTS,1> virtual_q_;
+        Eigen::Array<double,N_JOINTS,1> target_torque_;
+        Eigen::Array<double,N_JOINTS,1> q_ref_;
+        Eigen::Array<double,N_JOINTS,1> nullspace_stiffness_;
+        Eigen::Array<double,N_JOINTS,1> nullspace_damping_;
+        Eigen::Array<double,N_JOINTS,1> joint_min_;
+        Eigen::Array<double,N_JOINTS,1> joint_max_;
+        Eigen::Array<double,N_JOINTS,1> joint_limit_stiffness_;
+        Eigen::Array<double,N_JOINTS,1> joint_limit_damping_;
+        Eigen::Array<double,N_JOINTS,1> joint_limit_torque_max_;
+        Eigen::Array<double,N_JOINTS,1> cabinet_stiffness_;
+        Eigen::Array<double,N_JOINTS,1> delta_min_;
+        Eigen::Array<double,N_JOINTS,1> delta_max_;
+        double joint_limit_margin_ = 20. * M_PI / 180.;
+        double singularity_sigma_threshold_ = 0.08;
+        double singularity_gradient_step_ = 1e-4;
+        double singularity_stiffness_ = 250.;
+        double singularity_damping_ = 4.;
+        double singularity_torque_max_ = 30.;
+
+        bool use_bias_compensation_ = true;
+        bool use_singularity_avoidance_ = true;
+        bool target_filter_initialized_ = false;
+        bool state_initialized_ = false;
+        bool virtual_target_initialized_ = false;
+        int state_ = 1;
+    };
+}
+
+#endif

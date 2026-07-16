@@ -1,74 +1,114 @@
-#ifndef CONTROL_HPP
-#define CONTROL_HPP
+#ifndef TRAJECTORY
+#define TRAJECTORY
 
 #include <Eigen/Dense>
-#include <algorithm>  
+#include <Eigen/Geometry>
+#include <list>
 #include <iostream>
+#include <cmath>
+#include <algorithm>
+#include <string>
 
-namespace kuka_control
+#include <iostream>
+#include <fcntl.h>      // shm_open
+#include <sys/mman.h>   // mmap, PROT_*, MAP_*
+#include <unistd.h>     // ftruncate, close
+
+#include "control_interface.hpp"
+#include "../ik/drake_kinematic.hpp"
+
+namespace control
 {
-    constexpr int NUM_J = 7;
+    const double delta_thetta = 1*M_PI/180;
+    const int points_per_delta = 5;
 
-    class Control
+
+    class Control : public IControl
     {
-    private:
-        const double time_tick_;
-        // const Eigen::VectorXd Kp_;
-        // const Eigen::VectorXd Kd_;
-        // const Eigen::VectorXd Kv_;
-        // const Eigen::VectorXd static_friction_;
-        // const Eigen::VectorXd dynamic_friction_;
+        private:
 
-        // Eigen::VectorXd q_previous_;
+            double time_tick_ = 0.002;
+            double max_joint_velocity_ = 0.5;
+            double min_delta_ratio_ = 1. / 10.;
 
-        // Eigen::VectorXd torque_;
-        // Eigen::VectorXd q_;
-        // Eigen::VectorXd v_;
+            // const double e_min_ = 0.001*M_PI/180;
+            // const double e_max_ = 0.005*M_PI/180;
 
-        // Eigen::VectorXd q_d_;
+            const double e_min_ = 0.005*M_PI/180;
+            const double e_max_ = 0.01*M_PI/180;
 
-        // Временное
+            const double max_d_ = 15*M_PI/180;
+            const double target_pos_eps_ = 1e-4;
+            const double target_rot_eps_ = 1e-3;
+            double target_filter_alpha_ = 0.85;
+            double velocity_filter_alpha_ = 0.85;
 
-        const double Kp_;
-        const double Kd_;
+            Eigen::Array<double,N_JOINTS,1> eps_min_;
+            Eigen::Array<double,N_JOINTS,1> eps_max_;
+            Eigen::Array<double,N_JOINTS,1> max_delta_;
+            Eigen::Array<double,N_JOINTS,1> delta_min_;
+            Eigen::Array<double,N_JOINTS,1> delta_max_;
+            Eigen::Array<double,N_JOINTS,1> cabinet_stiffness_;
+            Eigen::Array<double,N_JOINTS,1> torque_rate_limit_;
 
-        const double v_max_;
-        const double torque_max_;
+            std::list<Eigen::Array<double,N_JOINTS,1>> points_;
+            bool done_ = true;
 
-        double q_previous_;
+            Eigen::Array<double,N_JOINTS,1> virtual_thetta_;
+            Eigen::Array<double,N_JOINTS,1> next_thetta_;
+            Eigen::Array<double,N_JOINTS,1> current_thetta_;
+            Eigen::Array<double,N_JOINTS,1> current_torque_;
+            Eigen::Array<double,N_JOINTS,1> previous_current_thetta_;
+            Eigen::Array<double,N_JOINTS,1> previous_target_thetta_;
+            Eigen::Array<double,N_JOINTS,1> filtered_current_velocity_;
+            Eigen::Array<double,N_JOINTS,1> target_torque_;
+            Eigen::Array<double,N_JOINTS,1> target_thetta_;
 
-        double torque_;
-        double q_;
-        double v_;
+            iiwa_kinematics::DrakeKinematic solver_;
+            Eigen::Vector3d target_pos_;
+            Eigen::Matrix<double,3,3> target_rot_;
+            Eigen::Vector3d current_pos_;
+            Eigen::Matrix<double,3,3> current_rot_;
+            Eigen::Matrix<double,6,1> force_;
+            int ik_state_ = 0;
 
-        double q_d_;
+            Eigen::Array<double,N_JOINTS,1> stiffness_;
+            Eigen::Array<double,N_JOINTS,1> damping_;
+            bool torque_initialized_ = false;
+            bool target_filter_initialized_ = false;
 
-        double gamma_;
-        double k_;
-        double lambda_;
-        double s_;
+        public:
+            Control(const Eigen::Array<double,N_JOINTS,1> &first_thetta, double& time_tick, const std::string &urdf_name = "../robots/iiwa.urdf");
 
-        double I_h_;
-        double b_h_;
-        double T_h_;
-        double mr_h_;
+            bool push(const Eigen::Array<double,N_JOINTS,1> &thetta);
+            bool pop(Eigen::Array<double,N_JOINTS,1> &thetta);
 
-        unsigned long count = 0;
+            int updateTarget(const Eigen::Vector3d &target_pos, const Eigen::Matrix<double,3,3> &target_rot) override;
+            void updateCurrentState(const Eigen::Array<double,N_JOINTS,1> &current_thetta, const Eigen::Array<double,N_JOINTS,1> &current_torque) override;
+            Eigen::Array<double,N_JOINTS,1> getTorque() override;
+            Eigen::Array<double,N_JOINTS,1> getNextPoint() override;
+            Eigen::Array<double,N_JOINTS,1> getTargetThetta() const override;
+            Eigen::Vector3d getCurrentPosition() const override;
+            Eigen::Matrix<double,3,3> getCurrentRotation() const override;
+            Eigen::Matrix<double,6,1> getForce() const override;
+            int getState() const override;
+            int getIKState() const;
 
-    public: 
+            Eigen::Array<double,N_JOINTS,1> getDelta(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
+            Eigen::Array<double,N_JOINTS,1>& getNextPoint(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
+            bool getDone();
 
-        Control(const double Kp = 1, const double Kd = 0, const double v_max = 2, const double time_tick = 0.005);
-        // std::array<double, NUM_J> clacTorque(std::array<double, NUM_J> q, std::array<double, NUM_J> q_d);
+            Eigen::Array<double,N_JOINTS,1>& getTorque(const Eigen::Array<double,N_JOINTS,1> &next_thetta, const Eigen::Array<double,N_JOINTS,1> &current_thetta);
 
-        void setPreviousPos(double q);
+            size_t size();
 
-        double calcTorque(double q, double q_d);
-
-        int sat(double s);
     };
 
+    bool eigenArrayEqual(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &eps);
+    bool eigenArrayDiff(const Eigen::Array<double,N_JOINTS,1> &arr1, const Eigen::Array<double,N_JOINTS,1> &arr2, const Eigen::Array<double,N_JOINTS,1> &diff);
     int sign(double a);
-}
 
+    void waitConnection();
+}
 
 #endif

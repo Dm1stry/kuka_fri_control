@@ -26,10 +26,13 @@ set(COMPILE_TORQUE_OVERLAY ON)
 set(T_DIR examples/LBRTorqueSineOverlay)
 
 set(CONTROL ${CMAKE_CURRENT_SOURCE_DIR}/control)
+set(IK ${CMAKE_CURRENT_SOURCE_DIR}/ik)
 set(SERVER ${CMAKE_CURRENT_SOURCE_DIR}/udp)
 set(LOCKFREE ${CMAKE_CURRENT_SOURCE_DIR}/lockfree)
-set(PLANER ${CMAKE_CURRENT_SOURCE_DIR}/planer)
 set(KUKAFRI ${CMAKE_CURRENT_SOURCE_DIR}/kukafri)
+set(LOGGER ${CMAKE_CURRENT_SOURCE_DIR}/logger)
+set(TRAJECTORY ${CMAKE_CURRENT_SOURCE_DIR}/trajectory)
+option(BUILD_PYTHON_BINDINGS "Build pybind11 Python module" OFF)
 
 if(${COMPILE_TORQUE_OVERLAY})
 	set(TORQUE_OVERLAY_SOURCES
@@ -42,25 +45,28 @@ if(${COMPILE_TORQUE_OVERLAY})
 	)
 endif()
 
-set(LOGGER_SOURCES
-	logger/ilogger.hpp
-	logger/filelogger.hpp		logger/filelogger.cpp
-	logger/jarraylogger.hpp		logger/jarraylogger.cpp
-)
-
-set(SOURCES
-	main.cpp
+set(CORE_SOURCES
+	main_controller.cpp						main_controller.hpp 
 	${KUKAFRI}/customlbrclient.hpp			${KUKAFRI}/customlbrclient.cpp
 	${KUKAFRI}/kukafricontroller.hpp		${KUKAFRI}/kukafricontroller.cpp
 	${KUKAFRI}/apiserver.hpp				${KUKAFRI}/apiserver.cpp
 	${KUKAFRI}/helper_functions.hpp
 
-	${LOGGER_SOURCES}
+	${LOGGER}/logger.hpp				${LOGGER}/logger.cpp
+	${TRAJECTORY}/trajectory_generator.hpp	${TRAJECTORY}/trajectory_generator.cpp
 	# Сюда сорцы
 	${SERVER}/udp_server.hpp			${SERVER}/udp_server.cpp
 	${SERVER}/json.hpp
 	${LOCKFREE}/lockfree.hpp
-	${PLANER}/trajectory.hpp			${PLANER}/trajectory.cpp
+	${CONTROL}/control_interface.hpp
+	${CONTROL}/control.hpp				${CONTROL}/control.cpp
+	${CONTROL}/task_space_control.hpp	${CONTROL}/task_space_control.cpp
+	${IK}/drake_kinematic.hpp			${IK}/drake_kinematic.cpp			${IK}/cost.hpp
+)
+
+set(SOURCES
+	main.cpp
+	${CORE_SOURCES}
 )
 
 
@@ -68,6 +74,7 @@ find_library(FRI_LIB libFRIClient NAMES libFRIClient FRIClient HINTS deps/lib RE
 
 # Control
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
+find_package(drake CONFIG REQUIRED)
 
 message("-- FRI library found in: ${FRI_LIB}")
 
@@ -81,11 +88,42 @@ target_link_libraries(${PROJECT}
     ${FRI_LIB}
 	Threads::Threads
     Eigen3::Eigen
+	drake::drake
 )
 
 target_include_directories(${PROJECT} PUBLIC
 	deps/include/
 )
+
+if(BUILD_PYTHON_BINDINGS)
+	if(FRI_LIB MATCHES "\\.a$")
+		message(WARNING
+			"Python bindings are linked as a shared module, but FRI_LIB points to a static library. "
+			"deps/lib/libFRIClient.a must be rebuilt with -fPIC, or FRI_LIB must point to an ABI-compatible libFRIClient.so."
+		)
+	endif()
+
+	find_package(pybind11 CONFIG REQUIRED)
+
+	pybind11_add_module(kuka_fri_py
+		pybind_module.cpp
+		${CORE_SOURCES}
+	)
+
+	target_link_libraries(kuka_fri_py PRIVATE
+		${FRI_LIB}
+		Threads::Threads
+		Eigen3::Eigen
+		drake::drake
+	)
+
+	target_include_directories(kuka_fri_py PRIVATE
+		${CMAKE_CURRENT_SOURCE_DIR}
+		deps/include/
+	)
+
+	install(TARGETS kuka_fri_py LIBRARY DESTINATION .)
+endif()
 
 if(COMPILE_JOINT_OVERLAY)
 	add_executable(${JOINT_OVERLAY_NAME}
