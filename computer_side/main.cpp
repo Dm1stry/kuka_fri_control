@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     auto mode = KUKA_CONTROL::JOINT_POSITION;
 
     bool use_task_space = true;
-    bool use_udp_source = false;
+    bool use_udp_source = true;
  
     // --------------------------- Инициализация сервера
 
@@ -28,7 +28,7 @@ int main(int argc, char **argv)
         std::cout << "Server started" << std::endl;
     }
 
-    KukaController controller(mode, "../robots/iiwa.urdf", use_task_space);
+    KukaController controller(mode, "../robots/iiwa2_gripper.urdf", use_task_space);
     controller.start();
 
     Eigen::Vector3d target_pos;

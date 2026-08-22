@@ -23,7 +23,7 @@
 class KukaController
 {
 public:
-    KukaController(KUKA_CONTROL::control_mode mode = KUKA_CONTROL::JOINT_POSITION, const std::string &urdf_name = "../robots/iiwa.urdf", bool use_task_space = false);
+    KukaController(KUKA_CONTROL::control_mode mode = KUKA_CONTROL::JOINT_POSITION, const std::string &urdf_name = "../robots/iiwa2_gripper.urdf", bool use_task_space = false);
     ~KukaController();
 
     void start();
