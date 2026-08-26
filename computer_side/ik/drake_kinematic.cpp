@@ -101,7 +101,7 @@ Eigen::Matrix<double,6,1> DrakeKinematic::getForce(const Eigen::Array<double,N_J
 {
     // Eigen::Matrix<double,3,1> force;
 
-    const drake::multibody::Body<double>& end_effector = plant_.GetBodyByName("iiwa_link_ee");
+    const drake::multibody::Body<double>& end_effector = plant_.GetBodyByName(END_EFFECTOR_LINK_NAME);
 
     // Устанавливаем положение в контексте
     plant_.SetPositions(context_.get(), thetta.matrix());
@@ -149,7 +149,9 @@ int DrakeKinematic::FK()
     thetta_previous_ = thetta_;
     plant_.SetPositions(context_.get(), thetta_);
 
-    auto X_WE = plant_.CalcRelativeTransform(*context_, plant_.GetFrameByName("iiwa_link_0"), plant_.GetFrameByName("iiwa_link_ee"));
+    auto X_WE = plant_.CalcRelativeTransform(
+        *context_, plant_.GetFrameByName(BASE_LINK_NAME),
+        plant_.GetFrameByName(END_EFFECTOR_LINK_NAME));
 
     position_ = X_WE.translation().transpose();
     rotation_ = X_WE.rotation().matrix();
@@ -166,7 +168,7 @@ int DrakeKinematic::IK()
     drake::multibody::InverseKinematics* ik_ = new drake::multibody::InverseKinematics(plant_);
 
     target_orientation_ = drake::math::RotationMatrix<double>(rotation_.transpose());
-    const drake::multibody::Frame<double>& end_effector_frame = plant_.GetFrameByName("iiwa_link_ee");
+    const drake::multibody::Frame<double>& end_effector_frame = plant_.GetFrameByName(END_EFFECTOR_LINK_NAME);
 
     p_BQ_ = Eigen::Vector3d::Zero();    // Точка Q в системе координат B
     lower_bound_ = position_;           // Нижняя граница позиции
@@ -206,7 +208,7 @@ int DrakeKinematic::IK_maxU()
     drake::multibody::InverseKinematics* ik_ = new drake::multibody::InverseKinematics(plant_);
 
     target_orientation_ = drake::math::RotationMatrix<double>(rotation_.transpose());
-    const drake::multibody::Frame<double>& end_effector_frame = plant_.GetFrameByName("iiwa_link_ee");
+    const drake::multibody::Frame<double>& end_effector_frame = plant_.GetFrameByName(END_EFFECTOR_LINK_NAME);
 
     p_BQ_ = Eigen::Vector3d::Zero();    // Точка Q в системе координат B
     lower_bound_ = position_;           // Нижняя граница позиции
@@ -248,7 +250,7 @@ int DrakeKinematic::IK_minQ()
     drake::multibody::InverseKinematics* ik_ = new drake::multibody::InverseKinematics(plant_);
 
     target_orientation_ = drake::math::RotationMatrix<double>(rotation_.transpose());
-    const drake::multibody::Frame<double>& end_effector_frame = plant_.GetFrameByName("iiwa_link_ee");
+    const drake::multibody::Frame<double>& end_effector_frame = plant_.GetFrameByName(END_EFFECTOR_LINK_NAME);
 
     p_BQ_ = Eigen::Vector3d::Zero();    // Точка Q в системе координат B
     lower_bound_ = position_;           // Нижняя граница позиции

@@ -25,6 +25,9 @@ namespace iiwa_kinematics
 {
     const int N_JOINTS = 7;
 
+    inline const std::string BASE_LINK_NAME = "iiwa_base";
+    inline const std::string END_EFFECTOR_LINK_NAME = "tool1";
+
     const double LIMITS_MAX[N_JOINTS] = {168, 118, 168, 118, 168, 118, 173};
     const double LIMITS_MIN[N_JOINTS] = {-168, -118, -168, -118, -168, -118, -173};
 

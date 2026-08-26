@@ -15,7 +15,7 @@ int main(int argc, char **argv)
     auto mode = KUKA_CONTROL::JOINT_POSITION;
 
     bool use_task_space = true;
-    bool use_udp_source = true;
+    bool use_udp_source = false;
  
     // --------------------------- Инициализация сервера
 
@@ -41,6 +41,9 @@ int main(int argc, char **argv)
     target_rot << obs_msg[10], obs_msg[11], obs_msg[12],
                   obs_msg[13], obs_msg[14], obs_msg[15],
                   obs_msg[16], obs_msg[17], obs_msg[18];
+
+    
+    std::cout << target_rot << "\n";
 
 
     // trajectory::TrajectoryGenerator trajectory_generator(
