@@ -77,7 +77,7 @@ class CMakeBuild(build_ext):
 
 setup(
     name="kuka-fri-py",
-    version="0.1.0",
+    version="0.1.3",
     description="Python bindings for the KUKA FRI controller",
     long_description=(Path(__file__).parent / "README.md").read_text(encoding="utf-8"),
     long_description_content_type="text/markdown",

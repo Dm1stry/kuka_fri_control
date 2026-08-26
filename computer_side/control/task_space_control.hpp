@@ -22,8 +22,8 @@ namespace control
     {
     public:
         TaskSpaceControl(const std::string &urdf_name,
-                         const std::string &base_frame = "iiwa_link_0",
-                         const std::string &end_effector_frame = "iiwa_link_ee",
+                         const std::string &base_frame = "iiwa_base",
+                         const std::string &end_effector_frame = "tool1",
                          double time_tick = 0.005);
 
         void setStiffness(const Eigen::Matrix<double,6,1> &stiffness);
@@ -80,12 +80,12 @@ namespace control
         std::string base_frame_;
         std::string end_effector_frame_;
         double time_tick_ = 0.002;
-        double max_joint_velocity_ = 0.5;
+        double max_joint_velocity_ = 0.85;
         double min_delta_ratio_ = 1. / 10.;
         double linear_step_min_ = 0.0005;
-        double linear_step_max_ = 0.001;
+        double linear_step_max_ = 0.005;
         double angular_step_min_ = 0.001 * M_PI / 180.;
-        double angular_step_max_ = 0.05 * M_PI / 180.;
+        double angular_step_max_ = 0.2 * M_PI / 180.;
         double e_min_ = 0.01 * M_PI / 180.;
         double e_max_ = 0.05 * M_PI / 180.;
         double target_pos_eps_ = 1e-4;

@@ -213,9 +213,9 @@ Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque(
         const Eigen::Matrix<double,N_JOINTS,6> J_pinv = dampedPseudoInverse(J);
         const Eigen::Matrix<double,N_JOINTS,N_JOINTS> nullspace =
             Eigen::Matrix<double,N_JOINTS,N_JOINTS>::Identity() - J_pinv * J;
-        const Eigen::Matrix<double,N_JOINTS,1> tau_secondary =
-            (nullspace_stiffness_ * (q_ref_ - q) - nullspace_damping_ * dq +
-             calcJointLimitTorque(q, dq)); // + calcSingularityAvoidanceTorque(q, dq)).matrix();
+        const Eigen::Matrix<double,N_JOINTS,1> tau_secondary = calcJointLimitTorque(q, dq);
+            // (nullspace_stiffness_ * (q_ref_ - q) - nullspace_damping_ * dq +
+            //  calcJointLimitTorque(q, dq)); // + calcSingularityAvoidanceTorque(q, dq)).matrix();
 
         tau += nullspace * tau_secondary;
     }
