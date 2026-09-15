@@ -30,7 +30,13 @@ public:
     void stop();
 
     Eigen::Array<double,25,1> getObservation();
+    Eigen::Array<double,7,1> getCurrentJoints();
+    Eigen::Array<double,7,1> getCurrentJointsDegrees();
+    Eigen::Array<double,7,1> getTargetJoints();
+    Eigen::Array<double,7,1> getTargetJointsDegrees();
     void setTarget(const Eigen::Vector3d& target_position, const Eigen::Matrix<double,3,3>& target_rotation);
+    void setTargetJoints(const Eigen::Array<double,7,1>& target_thetta);
+    void setTargetJointsDegrees(const Eigen::Array<double,7,1>& target_thetta_deg);
     
 private:
     void loop(std::stop_token stop_token);

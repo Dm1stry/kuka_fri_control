@@ -25,8 +25,18 @@ PYBIND11_MODULE(kuka_fri_py, m)
         .def("start", &KukaController::start, py::call_guard<py::gil_scoped_release>())
         .def("stop", &KukaController::stop, py::call_guard<py::gil_scoped_release>())
         .def("get_observation", &KukaController::getObservation)
+        .def("get_current_joints", &KukaController::getCurrentJoints)
+        .def("get_current_joints_degrees", &KukaController::getCurrentJointsDegrees)
+        .def("get_target_joints", &KukaController::getTargetJoints)
+        .def("get_target_joints_degrees", &KukaController::getTargetJointsDegrees)
         .def("set_target", &KukaController::setTarget,
              py::arg("target_position"),
              py::arg("target_rotation"),
+             py::call_guard<py::gil_scoped_release>())
+        .def("set_target_joints", &KukaController::setTargetJoints,
+             py::arg("target_thetta"),
+             py::call_guard<py::gil_scoped_release>())
+        .def("set_target_joints_degrees", &KukaController::setTargetJointsDegrees,
+             py::arg("target_thetta_deg"),
              py::call_guard<py::gil_scoped_release>());
 }

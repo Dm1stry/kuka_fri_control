@@ -132,6 +132,27 @@ int TaskSpaceControl::updateTarget(const Eigen::Vector3d &target_pos, const Eige
     return state_;
 }
 
+int TaskSpaceControl::updateJointTarget(const Eigen::Array<double,N_JOINTS,1> &target_thetta)
+{
+    virtual_q_ = target_thetta;
+    clampVirtualJointPosition();
+
+    plant_.SetPositions(context_.get(), virtual_q_.matrix());
+    const auto &base_frame = plant_.GetFrameByName(base_frame_);
+    const auto &end_effector_frame = plant_.GetFrameByName(end_effector_frame_);
+    const auto X_BE = plant_.CalcRelativeTransform(*context_, base_frame, end_effector_frame);
+
+    target_position_ = X_BE.translation();
+    target_rotation_ = X_BE.rotation().matrix();
+    virtual_target_position_ = target_position_;
+    virtual_target_rotation_ = target_rotation_;
+    virtual_target_initialized_ = true;
+    target_filter_initialized_ = true;
+
+    state_ = 1;
+    return state_;
+}
+
 void TaskSpaceControl::updateCurrentState(const Eigen::Array<double,N_JOINTS,1> &current_thetta,
                                           const Eigen::Array<double,N_JOINTS,1> &current_torque)
 {

@@ -178,6 +178,30 @@ Eigen::Array<double,25,1> KukaController::getObservation()
     return obs_msg_;
 }
 
+Eigen::Array<double,7,1> KukaController::getCurrentJoints()
+{
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return current_thetta_;
+}
+
+Eigen::Array<double,7,1> KukaController::getCurrentJointsDegrees()
+{
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return current_thetta_ * 180.0 / M_PI;
+}
+
+Eigen::Array<double,7,1> KukaController::getTargetJoints()
+{
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return target_thetta_;
+}
+
+Eigen::Array<double,7,1> KukaController::getTargetJointsDegrees()
+{
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    return target_thetta_ * 180.0 / M_PI;
+}
+
 void KukaController::setTarget(const Eigen::Vector3d& target_position, const Eigen::Matrix<double,3,3>& target_rotation)
 {
     std::lock_guard<std::mutex> lock(state_mutex_);
@@ -197,4 +221,27 @@ void KukaController::setTarget(const Eigen::Vector3d& target_position, const Eig
                 0., 0., 0., 0.;
     log_.setData(log_data);
     // std::cout << "set: " << std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - init).count() << "\n";
+}
+
+void KukaController::setTargetJoints(const Eigen::Array<double,7,1>& target_thetta)
+{
+    std::lock_guard<std::mutex> lock(state_mutex_);
+    Eigen::Array<double,9,1> log_data;
+
+    target_thetta_ = target_thetta;
+    state_ = controller_->updateJointTarget(target_thetta_);
+
+    const double time_us = static_cast<double>(
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::steady_clock::now() - init_time_).count());
+
+    log_data << 7, time_us,
+                target_thetta_[0], target_thetta_[1], target_thetta_[2], target_thetta_[3],
+                target_thetta_[4], target_thetta_[5], target_thetta_[6];
+    log_.setData(log_data);
+}
+
+void KukaController::setTargetJointsDegrees(const Eigen::Array<double,7,1>& target_thetta_deg)
+{
+    setTargetJoints(target_thetta_deg * M_PI / 180.0);
 }

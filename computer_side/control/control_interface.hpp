@@ -17,6 +17,7 @@ namespace control
         virtual ~IControl() = default;
 
         virtual int updateTarget(const Eigen::Vector3d &target_pos, const RotationMatrix &target_rot) = 0;
+        virtual int updateJointTarget(const JointArray &target_thetta) = 0;
         virtual void updateCurrentState(const JointArray &current_thetta, const JointArray &current_torque) = 0;
 
         virtual JointArray getTorque() = 0;

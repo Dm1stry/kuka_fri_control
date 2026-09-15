@@ -84,6 +84,7 @@ namespace control
             bool pop(Eigen::Array<double,N_JOINTS,1> &thetta);
 
             int updateTarget(const Eigen::Vector3d &target_pos, const Eigen::Matrix<double,3,3> &target_rot) override;
+            int updateJointTarget(const Eigen::Array<double,N_JOINTS,1> &target_thetta) override;
             void updateCurrentState(const Eigen::Array<double,N_JOINTS,1> &current_thetta, const Eigen::Array<double,N_JOINTS,1> &current_torque) override;
             Eigen::Array<double,N_JOINTS,1> getTorque() override;
             Eigen::Array<double,N_JOINTS,1> getNextPoint() override;

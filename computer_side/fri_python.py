@@ -22,14 +22,13 @@ controller = fri.KukaController(
 controller.start()
 
 pos = np.array([0.65, 0.0,  0.35], dtype=np.float64)
+joint_target_deg = np.zeros(7, dtype=np.float64)
 
 rot = np.array([
     [-1.0, 0.0, 0.0],
     [0.0, 1.0, 0.0],
     [0.0, 0.0, -1.0],
 ], dtype=np.float64)
-
-controller.set_target(pos, rot)
 
 while 1:
     obs = controller.get_observation()
@@ -38,16 +37,9 @@ while 1:
     try:
         data, addr = haptic_sock.recvfrom(1024)
         message = np.array(list(map(float, data.decode()[1:-1].split(","))))
-        pos[0] += message[0]
-        pos[1] += message[1]
-        pos[2] += message[2]
-
-        rot[0] = message[3:6]
-        rot[1] = message[6:9]
-        rot[2] = message[9:12]
-
-        # print(rot)
-        controller.set_target(pos, rot)
+        if message.size >= 7:
+            joint_target_deg[:] = message[:7]
+            controller.set_target_joints_degrees(joint_target_deg)
 
     except socket.timeout:
         data, addr = None, None  # или просто continue
