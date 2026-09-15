@@ -115,6 +115,19 @@ int Control::updateTarget(const Eigen::Vector3d &target_pos, const Eigen::Matrix
     return ik_state_;
 }
 
+int Control::updateJointTarget(const Eigen::Array<double,N_JOINTS,1> &target_thetta)
+{
+    target_thetta_ = target_thetta;
+
+    solver_.setQ(target_thetta_);
+    solver_.FK();
+    target_pos_ = solver_.getPositionVector();
+    target_rot_ = solver_.getRotationMatrix();
+
+    ik_state_ = 1;
+    return ik_state_;
+}
+
 void Control::updateCurrentState(const Eigen::Array<double,N_JOINTS,1> &current_thetta, const Eigen::Array<double,N_JOINTS,1> &current_torque)
 {
     current_thetta_ = current_thetta;

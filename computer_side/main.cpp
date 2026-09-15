@@ -11,11 +11,12 @@ using namespace server;
 
 int main(int argc, char **argv)
 {
-    // auto mode = KUKA_CONTROL::TORQUE;
-    auto mode = KUKA_CONTROL::JOINT_POSITION;
+    auto mode = KUKA_CONTROL::TORQUE;
+    // auto mode = KUKA_CONTROL::JOINT_POSITION;
 
-    bool use_task_space = true;
+    bool use_task_space = false;
     bool use_udp_source = false;
+    bool use_udp_joint_target = false;
  
     // --------------------------- Инициализация сервера
 
@@ -35,6 +36,7 @@ int main(int argc, char **argv)
     Eigen::Matrix<double,3,3> target_rot;
 
     Eigen::Array<double,12,1> position_msg;
+    Eigen::Array<double,7,1> joint_target_deg;
     Eigen::Array<double,25,1> obs_msg = controller.getObservation();
 
     target_pos << obs_msg[7], obs_msg[8], obs_msg[9];
@@ -73,18 +75,30 @@ int main(int argc, char **argv)
         {
             if (server.getMsg(position_msg))  // Чтение пришедших по UDP данных
             {
-                target_pos[0] += position_msg[0];
-                target_pos[1] += position_msg[1];
-                target_pos[2] += position_msg[2];
+                if (use_udp_joint_target)
+                {
+                    joint_target_deg << position_msg[0], position_msg[1], position_msg[2],
+                                        position_msg[3], position_msg[4], position_msg[5],
+                                        position_msg[6];
+                    controller.setTargetJointsDegrees(joint_target_deg);
+                }
+                else
+                {
+                    target_pos[0] += position_msg[0];
+                    target_pos[1] += position_msg[1];
+                    target_pos[2] += position_msg[2];
 
-                target_rot << position_msg[3], position_msg[4], position_msg[5],
-                              position_msg[6], position_msg[7], position_msg[8],
-                              position_msg[9], position_msg[10], position_msg[11];
+                    target_rot << position_msg[3], position_msg[4], position_msg[5],
+                                  position_msg[6], position_msg[7], position_msg[8],
+                                  position_msg[9], position_msg[10], position_msg[11];
+                    controller.setTarget(target_pos, target_rot);
+                }
             }
         }
         else
         {
             trajectory_generator.getTarget(target_pos, target_rot);
+            controller.setTarget(target_pos, target_rot);
         }
 
         // if (++i > 3000)
@@ -93,8 +107,6 @@ int main(int argc, char **argv)
             
         //     i = -10000000;
         // }
-
-        controller.setTarget(target_pos, target_rot);
 
         obs_msg = controller.getObservation();
         // if (use_udp_source)
