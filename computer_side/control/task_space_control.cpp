@@ -232,13 +232,16 @@ Eigen::Array<double,N_JOINTS,1> TaskSpaceControl::getTorque(
         use_singularity_avoidance_)
     {
         const Eigen::Matrix<double,N_JOINTS,6> J_pinv = dampedPseudoInverse(J);
-        const Eigen::Matrix<double,N_JOINTS,N_JOINTS> nullspace =
-            Eigen::Matrix<double,N_JOINTS,N_JOINTS>::Identity() - J_pinv * J;
+        // Secondary torques require the transpose of the velocity-level
+        // null-space projector; I - J^+ J is only valid for joint velocities.
+        const Eigen::Matrix<double,N_JOINTS,N_JOINTS> nullspace_torque =
+            Eigen::Matrix<double,N_JOINTS,N_JOINTS>::Identity() -
+            J.transpose() * J_pinv.transpose();
         const Eigen::Matrix<double,N_JOINTS,1> tau_secondary = calcJointLimitTorque(q, dq);
             // (nullspace_stiffness_ * (q_ref_ - q) - nullspace_damping_ * dq +
             //  calcJointLimitTorque(q, dq)); // + calcSingularityAvoidanceTorque(q, dq)).matrix();
 
-        tau += nullspace * tau_secondary;
+        tau += nullspace_torque * tau_secondary;
     }
 
     // if (use_bias_compensation_)

@@ -1,14 +1,15 @@
 #ifndef UDP_SERVER
 #define UDP_SERVER
 
-#include <bits/stdc++.h> 
-#include <stdlib.h> 
-#include <unistd.h> 
-#include <string.h> 
-#include <sys/types.h> 
-#include <sys/socket.h> 
-#include <arpa/inet.h> 
-#include <netinet/in.h> 
+#include <bits/stdc++.h>
+#include <cstdint>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 #include <fcntl.h>
 
 #include "json.hpp"
@@ -30,8 +31,8 @@ namespace server
 
         bool server_started_ = false;   // is receive started
 
-        int sockfd_ = -1; 
-        char buffer_[1024]; 
+        int sockfd_ = -1;
+        char buffer_[1024];
 
         struct sockaddr_in servaddr_;
         struct sockaddr_in cliaddr_;
@@ -39,11 +40,15 @@ namespace server
 
         socklen_t len_;
         socklen_t temp_len_;
-	    ssize_t n_; 
-        
+	    ssize_t n_;
+
+
+        std::uint64_t transmit_sequence_ = 0;
+        std::uint64_t last_receive_sequence_ = 0;
+        bool have_receive_sequence_ = false;
         void closeSocket();
 
-    public: 
+    public:
         UDPServer(std::string server_ip, unsigned long server_port, std::string client_ip = "0.0.0.0", unsigned long client_port = 8080);
         ~UDPServer();
 
@@ -57,7 +62,7 @@ namespace server
     json eigenArrayToJson(const Eigen::ArrayXd& array);
 
     Eigen::ArrayXd jsonToEigenArray(const json& j);
-    
+
     // ======================================================================
     // ======================================================================
     // ======================================================================
@@ -69,7 +74,7 @@ namespace server
     client_ip_(client_ip),
     client_port_(client_port)
     {
-        
+
     }
 
     template <size_t receiv, size_t transmit>
@@ -80,15 +85,15 @@ namespace server
 
     template <size_t receiv, size_t transmit>
     void UDPServer<receiv,transmit>::start()
-    {	
+    {
         if (server_started_) {
             return;
         }
 
-        if ( (sockfd_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) { 
-            std::cerr << "Ошибка при создании сокета" << std::endl; 
-            return; 
-        } 
+        if ( (sockfd_ = socket(AF_INET, SOCK_DGRAM, 0)) < 0 ) {
+            std::cerr << "Ошибка при создании сокета" << std::endl;
+            return;
+        }
 
         int flags = fcntl(sockfd_, F_GETFL, 0);
         if (flags < 0 || fcntl(sockfd_, F_SETFL, flags | O_NONBLOCK) < 0) {
@@ -112,36 +117,36 @@ namespace server
             closeSocket();
             return;
         }
-        
-        memset(&servaddr_, 0, sizeof(servaddr_)); 
-        memset(&cliaddr_, 0, sizeof(cliaddr_)); 
-        memset(&temp_addr_, 0, sizeof(temp_addr_)); 
-        
-        servaddr_.sin_family = AF_INET; // IPv4 
-        // servaddr.sin_addr.s_addr = INADDR_ANY; 
+
+        memset(&servaddr_, 0, sizeof(servaddr_));
+        memset(&cliaddr_, 0, sizeof(cliaddr_));
+        memset(&temp_addr_, 0, sizeof(temp_addr_));
+
+        servaddr_.sin_family = AF_INET; // IPv4
+        // servaddr.sin_addr.s_addr = INADDR_ANY;
         if (inet_pton(AF_INET, server_ip_.c_str(), &servaddr_.sin_addr) != 1) {
             std::cerr << "Некорректный IP сервера: " << server_ip_ << std::endl;
             closeSocket();
             return;
         }
-        servaddr_.sin_port = htons(server_port_); 
+        servaddr_.sin_port = htons(server_port_);
 
-        cliaddr_.sin_family = AF_INET; // IPv4 
-        // cliaddr_.sin_addr.s_addr = INADDR_ANY; 
+        cliaddr_.sin_family = AF_INET; // IPv4
+        // cliaddr_.sin_addr.s_addr = INADDR_ANY;
         if (inet_pton(AF_INET, client_ip_.c_str(), &cliaddr_.sin_addr) != 1) {
             std::cerr << "Некорректный IP клиента: " << client_ip_ << std::endl;
             closeSocket();
             return;
         }
-        cliaddr_.sin_port = htons(client_port_); 
-        
-        // Bind the socket with the server address 
-        if ( bind(sockfd_, (const struct sockaddr *)&servaddr_, sizeof(servaddr_)) < 0 ) 
-        { 
+        cliaddr_.sin_port = htons(client_port_);
+
+        // Bind the socket with the server address
+        if ( bind(sockfd_, (const struct sockaddr *)&servaddr_, sizeof(servaddr_)) < 0 )
+        {
             std::cerr << "Ошибка привязки сокета" << std::endl;
             closeSocket();
             return;
-        } 
+        }
 
         len_ = sizeof(cliaddr_); //len is value/result
         temp_len_ = sizeof(temp_addr_); //len is value/result
@@ -151,8 +156,8 @@ namespace server
 
     template <size_t receiv, size_t transmit>
     void UDPServer<receiv,transmit>::stop()
-    {	
-        if (server_started_) 
+    {
+        if (server_started_)
         {
             server_started_ = false;
         }
@@ -160,7 +165,7 @@ namespace server
     }
 
     template <size_t receiv, size_t transmit>
-    void UDPServer<receiv,transmit>::closeSocket() 
+    void UDPServer<receiv,transmit>::closeSocket()
     {
         if (sockfd_ >= 0) {
             close(sockfd_);
@@ -199,7 +204,24 @@ namespace server
 
             try {
                 json j = json::parse(str);
-                Eigen::ArrayXd parsed = jsonToEigenArray(j);
+                const bool sequenced = j.is_object();
+                std::uint64_t sequence = 0;
+                const json *payload = &j;
+
+                if (sequenced) {
+                    if (!j.contains("sequence") || !j["sequence"].is_number_unsigned() ||
+                        !j.contains("data") || !j["data"].is_array()) {
+                        std::cerr << "Некорректный UDP envelope: требуются sequence и data" << std::endl;
+                        continue;
+                    }
+                    sequence = j["sequence"].get<std::uint64_t>();
+                    if (have_receive_sequence_ && sequence <= last_receive_sequence_) {
+                        continue;  // Drop duplicate or reordered commands.
+                    }
+                    payload = &j["data"];
+                }
+
+                Eigen::ArrayXd parsed = jsonToEigenArray(*payload);
 
                 if (parsed.size() != receiv) {
                     std::cerr << "Некорректный размер сообщения: ожидалось "
@@ -208,6 +230,10 @@ namespace server
                 }
 
                 command = parsed;
+                if (sequenced) {
+                    last_receive_sequence_ = sequence;
+                    have_receive_sequence_ = true;
+                }
                 received = true;
             } catch (const std::invalid_argument&) {
                 std::cerr << "Некорректное сообщение: не число: " << str << std::endl;
@@ -228,7 +254,10 @@ namespace server
             return false;
         }
 
-        std::string message = eigenArrayToJson(thetta).dump();
+        json envelope;
+        envelope["sequence"] = transmit_sequence_++;
+        envelope["data"] = eigenArrayToJson(thetta);
+        std::string message = envelope.dump();
         if (sendto(sockfd_, message.c_str(), message.size(), MSG_CONFIRM,
                    (const struct sockaddr *) &cliaddr_, sizeof(cliaddr_)) < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR) {

@@ -1,49 +1,165 @@
-# Kuka FRI control
-A Linux-based project aimed at teleoperation of the KUKA LBR IIWA collaborative manipulator with the Kuka Sunrise 1.7 OS via UDP. It allows setting target angles on the manipulator and receiving joint torque data from it.
+# KUKA FRI Control
 
-## Credentails
-Made in Innopolis University
-By:
-- Alik Valiullin
-- Dmitrii Mistrikov
-- Ruslan Damindarov
+Research software for controlling a KUKA LBR iiwa manipulator through the
+Fast Research Interface (FRI). This repository accompanies an academic
+research project and contains the host-side controller, Python bindings,
+trajectory-recording utilities, robot models, and an experimental KUKA
+Sunrise application.
 
-## Dependencies
-(Linux system)
-- cmake
-- Eigen 3.3
+> **Safety warning**
+>
+> This software can command a physical industrial robot. It is provided for
+> research use and has no safety certification. Test changes in simulation or
+> with the robot drives disabled first, verify all joint/workspace limits and
+> controller gains, keep an emergency stop accessible, and begin with reduced
+> speed and small motions. The operator is responsible for the safety of the
+> complete robotic system.
 
-### Installation of dependencies (on ubuntu)
-```bash
-sudo apt install -y libboost-dev nlohmann-json3-dev libeigen3-dev cmake
+## Repository layout
+
+```text
+.
+|-- computer_side/       C++ FRI client, controllers, Python bindings, tools
+|   |-- control/         Joint- and task-space control
+|   |-- ik/              Drake-based kinematics and dynamics
+|   |-- kukafri/         KUKA FRI client integration
+|   |-- trajectory/      Reference-trajectory generators
+|   |-- udp/             JSON/UDP command transport
+|   |-- scripts/         Recording, plotting, and communication utilities
+|   |-- robots/          URDF models and meshes
+|   `-- examples/        KUKA FRI SDK overlay examples
+`-- manipulator_side/    Experimental Sunrise Java application
 ```
 
-## How to use
-### Build
-```bash
-mkdir computer_side/build  \ 
-cd computer_side/build     \
-cmake ..                   \
-cmake --build . --parallel
-```
-### Run
+The computer-side software receives targets over UDP or generates reference
+trajectories locally. A high-level control loop converts these targets into
+joint-position or torque commands, while a dedicated FRI thread exchanges
+commands and state with the robot. Measurements and controller signals can be
+logged to CSV for subsequent analysis.
 
-From build folder:
-1. Set IP on manipulator
-2. Start controlling program (control program must be on localhost:1245 and this one would be on localhost:1246)
-3. Start compiled program
+See [computer_side/README.md](computer_side/README.md) for the controller
+architecture, UDP packet format, observation and log layouts, Python API, and
+trajectory-recording workflow.
+
+## Requirements
+
+- Linux
+- CMake 3.16 or newer
+- A C++20 compiler
+- Eigen 3.3 or newer
+- Drake with its CMake package configuration
+- A KUKA FRI Client SDK/library compatible with the robot controller
+- KUKA Sunrise.Workbench and the matching FRI package for robot-side work
+- Python 3.10+, NumPy, and pybind11 (optional, for Python bindings)
+
+FRI headers and a prebuilt static client library are present under
+`computer_side/deps/`. Their compatibility with a particular controller and
+the terms under which they may be used or redistributed must be checked with
+the applicable KUKA SDK license.
+
+## Build
+
+Build the host-side executable from the repository root:
+
 ```bash
+cmake -S computer_side -B computer_side/build \
+  -Ddrake_DIR=/path/to/drake/lib/cmake/drake
+cmake --build computer_side/build -j2
+```
+
+If Drake is already discoverable by CMake, `drake_DIR` can be omitted. The
+resulting controller executable is `computer_side/build/FRI_control`.
+
+To build the optional Python extension:
+
+```bash
+cmake -S computer_side -B computer_side/build \
+  -DBUILD_PYTHON_BINDINGS=ON \
+  -Ddrake_DIR=/path/to/drake/lib/cmake/drake
+cmake --build computer_side/build --target kuka_fri_py -j2
+```
+
+The bundled static FRI library must be position-independent (`-fPIC`) when it
+is linked into the Python module. Alternatively, pass an ABI-compatible shared
+library with `-DFRI_LIB=/path/to/libFRIClient.so`.
+
+## Configuration and use
+
+Before running the controller, review the configuration near the beginning of
+`computer_side/main.cpp`. In particular, verify:
+
+- the control mode (joint-position or torque overlay);
+- whether targets come from UDP or the local trajectory generator;
+- the local and remote IP addresses and UDP ports;
+- the URDF path and end-effector model;
+- trajectory type, amplitude, and frequency;
+- controller gains, limits, and the robot's initial pose.
+
+Run from the build directory because the current executable uses a relative
+path to the robot model:
+
+```bash
+cd computer_side/build
 ./FRI_control
 ```
 
+The FRI connection blocks until robot state is available. Configure and start
+a compatible FRI session on the robot controller before starting an
+experiment. The current `main.cpp` defaults to torque control, task-space
+control, and UDP targets on localhost; these are source-level settings rather
+than command-line options.
 
-## Hardware
-- Kuka LBR IIWA 7
-- Comuter with ethernet port
-- Ethernet cable
+The Java sources in `manipulator_side/` are an experimental Sunrise-side
+prototype, not a turnkey deployment. Several message-decoding methods in
+`RobotRemoteControl.java` are placeholders and must be implemented and
+validated before use. Import these sources into a Sunrise.Workbench project,
+set the correct client address, and configure the FRI session for the specific
+cabinet and network. For ordinary FRI operation, a standard validated Sunrise
+FRI application may be used instead.
 
-## Project Structure
-- computer_side - Software running on the computer side (currently operational)
-- manipulator_side - Software running on the manipulator side (currently non-operational)
+## Reproducing experiments
 
-  
+`computer_side/scripts/record_trajectories.py` can create experiment plans and
+record commanded/measured motion, timestamps, joint state, and estimated
+wrench. It performs a dry run by default:
+
+```bash
+cd computer_side
+python scripts/record_trajectories.py \
+  --trajectory circle_xy square_xy line_y \
+  --amplitude 0.01 0.02 \
+  --frequency 0.05 0.10 \
+  --duration 30 \
+  --rate 100 \
+  --repetitions 3 \
+  --output trajectory_data
+```
+
+Inspect the generated experiment metadata before adding `--execute`, which
+allows the script to send commands to the robot. Record the exact commit,
+robot/controller versions, FRI version, URDF/tool parameters, gains, network
+configuration, and experiment arguments when producing paper results.
+
+## Research status and limitations
+
+- The software is under active development and does not provide hard
+  real-time scheduling on the host operating system.
+- Network latency, packet loss, host load, and FRI configuration affect the
+  achieved update rate and should be measured for each setup.
+- Estimated Cartesian wrench is reconstructed from external joint torques and
+  the model Jacobian; calibrate it against an external reference before using
+  it as a quantitative measurement.
+- Hardware-specific addresses, model paths, and control settings are currently
+  configured in source code.
+
+## Citation
+
+If you use this software in academic work, please cite the associated paper.
+The final bibliographic reference and BibTeX entry will be added here when the
+paper is published.
+
+## License
+
+Repository-authored code is available under the [MIT License](LICENSE).
+Third-party components, including KUKA FRI files, robot assets, Drake, Eigen,
+pybind11, Boost, and nlohmann JSON, remain subject to their own licenses.

@@ -5,9 +5,11 @@
 # current_rot_(2,0), current_rot_(2,1), current_rot_(2,2),
 # force_msg_[0], force_msg_[1], force_msg_[2], force_msg_[3], force_msg_[4], force_msg_[5];
 
-import numpy as np
-import kuka_fri_py as fri
+import json
 import socket
+
+import kuka_fri_py as fri
+import numpy as np
 
 haptic_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 haptic_sock.bind(("127.0.0.1", 8081))
@@ -20,6 +22,7 @@ controller = fri.KukaController(
 )
 
 controller.start()
+last_sequence = None
 
 pos = np.array([0.65, 0.0,  0.35], dtype=np.float64)
 joint_target_deg = np.zeros(7, dtype=np.float64)
@@ -36,13 +39,40 @@ while 1:
 
     try:
         data, addr = haptic_sock.recvfrom(1024)
-        message = np.array(list(map(float, data.decode()[1:-1].split(","))))
+        packet = json.loads(data.decode("utf-8"))
+
+        if isinstance(packet, dict):
+            sequence = packet.get("sequence")
+            payload = packet.get("data")
+            if (
+                not isinstance(sequence, int)
+                or isinstance(sequence, bool)
+                or sequence < 0
+                or not isinstance(payload, list)
+            ):
+                print(f"Ignoring malformed UDP envelope from {addr}: {packet!r}")
+                continue
+            if last_sequence is not None and sequence <= last_sequence:
+                continue
+        elif isinstance(packet, list):
+            # Legacy packets cannot be checked for duplication or reordering.
+            sequence = None
+            payload = packet
+        else:
+            print(f"Ignoring unsupported UDP packet from {addr}: {packet!r}")
+            continue
+
+        message = np.asarray(payload, dtype=np.float64)
         if message.size >= 7:
             joint_target_deg[:] = message[:7]
             controller.set_target_joints_degrees(joint_target_deg)
+            if sequence is not None:
+                last_sequence = sequence
 
     except socket.timeout:
         data, addr = None, None  # или просто continue
+    except (json.JSONDecodeError, UnicodeDecodeError, TypeError, ValueError) as error:
+        print(f"Ignoring invalid UDP packet: {error}")
 
 
 controller.stop()
