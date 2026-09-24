@@ -14,8 +14,8 @@ int main(int argc, char **argv)
     auto mode = KUKA_CONTROL::TORQUE;
     // auto mode = KUKA_CONTROL::JOINT_POSITION;
 
-    bool use_task_space = false;
-    bool use_udp_source = false;
+    bool use_task_space = true;
+    bool use_udp_source = true;
     bool use_udp_joint_target = false;
  
     // --------------------------- Инициализация сервера
