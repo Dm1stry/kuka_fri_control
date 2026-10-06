@@ -1,0 +1,65 @@
+{
+  "trajectory": [
+    "circle_xyz"
+  ],
+  "amplitude": [
+    0.02
+  ],
+  "frequency": [
+    0.1
+  ],
+  "duration": 20.0,
+  "rate": 100.0,
+  "warmup": 2.0,
+  "settle": 1.0,
+  "closure_time": 2.0,
+  "closure_timeout": 20.0,
+  "closure_tolerance": 0.004,
+  "repetitions": 3,
+  "output": "trajectory_data",
+  "urdf": "robots/iiwa2_gripper.urdf",
+  "execute": true,
+  "runs": [
+    {
+      "trajectory": "circle_xyz",
+      "amplitude": 0.02,
+      "frequency": 0.1,
+      "repetition": 1
+    },
+    {
+      "trajectory": "circle_xyz",
+      "amplitude": 0.02,
+      "frequency": 0.1,
+      "repetition": 2
+    },
+    {
+      "trajectory": "circle_xyz",
+      "amplitude": 0.02,
+      "frequency": 0.1,
+      "repetition": 3
+    }
+  ],
+  "created_unix_ns": 1790620468157416155,
+  "start_position_m": [
+    0.7306792708950197,
+    4.424568188395761e-07,
+    0.27691632260608884
+  ],
+  "start_rotation_matrix": [
+    [
+      0.6020479210755828,
+      -7.4738916594907845e-06,
+      0.7984599555849434
+    ],
+    [
+      -7.277999167553105e-07,
+      0.9999999999506396,
+      9.909153277658216e-06
+    ],
+    [
+      -0.7984599556195909,
+      -6.5469042196405976e-06,
+      0.6020479210404258
+    ]
+  ]
+}

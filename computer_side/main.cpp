@@ -11,8 +11,8 @@ using namespace server;
 
 int main(int argc, char **argv)
 {
-    auto mode = KUKA_CONTROL::TORQUE;
-    // auto mode = KUKA_CONTROL::JOINT_POSITION;
+    // auto mode = KUKA_CONTROL::TORQUE;
+    auto mode = KUKA_CONTROL::JOINT_POSITION;
 
     bool use_task_space = true;
     bool use_udp_source = true;
@@ -109,10 +109,10 @@ int main(int argc, char **argv)
         // }
 
         obs_msg = controller.getObservation();
-        // if (use_udp_source)
-        // {
-        //     server.setMsg(obs_msg);
-        // }
+        if (use_udp_source)
+        {
+            server.setMsg(obs_msg);
+        }
 
         std::this_thread::sleep_for(std::chrono::microseconds(900));
     }

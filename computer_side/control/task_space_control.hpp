@@ -93,7 +93,7 @@ namespace control
         double target_rot_eps_ = 1e-2;
         double target_filter_alpha_ = 0.85;
         double virtual_sync_alpha_ = 1.0;
-        double dls_lambda_ = 0.05;
+        double dls_lambda_ = 0.01;
 
         Eigen::Vector3d target_position_;
         Eigen::Matrix3d target_rotation_;
