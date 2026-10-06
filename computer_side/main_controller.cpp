@@ -42,7 +42,6 @@ void KukaController::start()
     if (use_task_space_)
     {
         auto task_controller = std::make_unique<control::TaskSpaceControl>(urdf_name_, "iiwa_base", "tool1", dt_);
-        task_controller->setNullspaceTarget(zero_thetta_);
         controller_ = std::move(task_controller);
     }
 

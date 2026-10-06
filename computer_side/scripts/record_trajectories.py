@@ -33,7 +33,10 @@ def parse_args():
     parser.add_argument("--duration", type=float, default=20.0, help="seconds per run")
     parser.add_argument("--rate", type=float, default=100.0, help="command/log rate in Hz")
     parser.add_argument("--warmup", type=float, default=2.0, help="smooth ramp duration in seconds")
-    parser.add_argument("--settle", type=float, default=2.0, help="pause between runs in seconds")
+    parser.add_argument("--settle", type=float, default=1.0, help="dwell after reaching the closed endpoint")
+    parser.add_argument("--closure-time", type=float, default=2.0, help="smooth closing interval in seconds")
+    parser.add_argument("--closure-timeout", type=float, default=20.0, help="maximum endpoint settling time in seconds")
+    parser.add_argument("--closure-tolerance", type=float, default=0.003, help="closed-endpoint tolerance in metres")
     parser.add_argument("--repetitions", type=int, default=1)
     parser.add_argument("--output", type=Path, default=Path("trajectory_data"))
     parser.add_argument("--urdf", default="robots/iiwa2_gripper.urdf")
@@ -43,6 +46,10 @@ def parse_args():
         parser.error("amplitudes and frequencies must be positive")
     if args.duration <= 0 or args.rate <= 0 or args.repetitions < 1:
         parser.error("duration/rate must be positive and repetitions >= 1")
+    if args.settle < 0 or args.closure_time < 0 or args.closure_timeout <= 0 or args.closure_tolerance <= 0:
+        parser.error("settle/closure time must be non-negative; closure timeout/tolerance must be positive")
+    if args.closure_time >= args.duration:
+        parser.error("--closure-time must be smaller than --duration")
     return args
 
 
@@ -51,10 +58,16 @@ def smoothstep(value):
     return value * value * (3.0 - 2.0 * value)
 
 
-def target_at(origin, trajectory, amplitude, frequency, elapsed, warmup):
+def target_at(origin, trajectory, amplitude, frequency, elapsed, warmup, duration=None, closure_time=0.0):
     target = origin.copy()
     phase = 2.0 * math.pi * frequency * elapsed
-    ramp = smoothstep(elapsed / warmup) if warmup > 0 else 1.0
+    ramp_up = smoothstep(elapsed / warmup) if warmup > 0 else 1.0
+    if duration is not None and closure_time > 0:
+        time_to_end = max(0.0, duration - elapsed)
+        ramp_down = smoothstep(time_to_end / closure_time)
+    else:
+        ramp_down = 1.0
+    ramp = min(ramp_up, ramp_down)
     if trajectory in ("circle_xy", "circle_xyz"):
         target[0] += ramp * amplitude * (1.0 - math.cos(phase))
         target[1] += ramp * amplitude * math.sin(phase)
@@ -83,10 +96,22 @@ def target_at(origin, trajectory, amplitude, frequency, elapsed, warmup):
     return target
 
 
-def run_experiment(controller, args, trajectory, amplitude, frequency, repetition, stop):
+def wait_for_closed_endpoint(controller, position, rotation, args, stop):
+    deadline = time.monotonic() + args.closure_timeout
+    while not stop[0] and time.monotonic() < deadline:
+        # The C++ controller filters every submitted Cartesian target. Repeat
+        # the endpoint command so that the filtered target fully converges.
+        controller.set_target(position, rotation)
+        observation = np.asarray(controller.get_observation(), dtype=float)
+        error = float(np.linalg.norm(observation[7:10] - position))
+        if error <= args.closure_tolerance:
+            return True, error
+        time.sleep(min(0.01, 1.0 / args.rate))
     observation = np.asarray(controller.get_observation(), dtype=float)
-    origin = observation[7:10].copy()
-    rotation = observation[10:19].reshape(3, 3).copy()
+    return False, float(np.linalg.norm(observation[7:10] - position))
+
+
+def run_experiment(controller, args, trajectory, amplitude, frequency, repetition, stop, origin, rotation):
     stem = f"{trajectory}_a{amplitude:g}_f{frequency:g}_r{repetition:02d}"
     csv_path = args.output / f"{stem}.csv"
     period = 1.0 / args.rate
@@ -100,14 +125,17 @@ def run_experiment(controller, args, trajectory, amplitude, frequency, repetitio
         while not stop[0]:
             now_ns = time.monotonic_ns()
             elapsed = (now_ns - start_ns) * 1e-9
-            if elapsed >= args.duration:
-                break
-            target = target_at(origin, trajectory, amplitude, frequency, elapsed, args.warmup)
+            final_sample = elapsed >= args.duration
+            sample_time = min(elapsed, args.duration)
+            target = target_at(
+                origin, trajectory, amplitude, frequency, sample_time, args.warmup,
+                args.duration, args.closure_time,
+            )
             controller.set_target(target, rotation)
             observation = np.asarray(controller.get_observation(), dtype=float)
             measured = observation[7:10]
             writer.writerow(
-                [sequence, now_ns, elapsed, trajectory, amplitude, frequency]
+                [sequence, now_ns, sample_time, trajectory, amplitude, frequency]
                 + target.tolist()
                 + measured.tolist()
                 + [float(np.linalg.norm(target - measured))]
@@ -115,10 +143,11 @@ def run_experiment(controller, args, trajectory, amplitude, frequency, repetitio
                 + observation[19:25].tolist()
             )
             sequence += 1
+            if final_sample:
+                break
             deadline += int(period * 1e9)
             time.sleep(max(0.0, (deadline - time.monotonic_ns()) * 1e-9))
 
-    controller.set_target(origin, rotation)
     return csv_path
 
 
@@ -145,13 +174,39 @@ def main():
     stop = [False]
     signal.signal(signal.SIGINT, lambda *_: stop.__setitem__(0, True))
     controller.start()
+    observation = np.asarray(controller.get_observation(), dtype=float)
+    origin = observation[7:10].copy()
+    rotation = observation[10:19].reshape(3, 3).copy()
+    metadata["start_position_m"] = origin.tolist()
+    metadata["start_rotation_matrix"] = rotation.tolist()
+    (args.output / "experiment.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     try:
+        initialized, initial_error = wait_for_closed_endpoint(controller, origin, rotation, args, stop)
+        if not initialized:
+            raise RuntimeError(
+                f"initial trajectory origin was not reached within {args.closure_timeout:g} s "
+                f"(position error {initial_error * 1000:.2f} mm)"
+            )
+        if args.settle > 0:
+            time.sleep(args.settle)
+
         for run in matrix:
             if stop[0]:
                 break
-            path = run_experiment(controller, args, stop=stop, **run)
+            path = run_experiment(
+                controller, args, stop=stop, origin=origin, rotation=rotation, **run
+            )
             print(path)
-            time.sleep(args.settle)
+            closed, closure_error = wait_for_closed_endpoint(controller, origin, rotation, args, stop)
+            if not closed:
+                if stop[0]:
+                    break
+                raise RuntimeError(
+                    f"closed endpoint was not reached within {args.closure_timeout:g} s "
+                    f"(position error {closure_error * 1000:.2f} mm)"
+                )
+            if args.settle > 0:
+                time.sleep(args.settle)
     finally:
         controller.stop()
 

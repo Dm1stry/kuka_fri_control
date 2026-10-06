@@ -1,0 +1,14 @@
+Cartesian tracking figure generated from temporally aligned trajectory logs.
+
+Panels (a) and (b) show reference paths, individual repetitions, and the mean measured path for Circle XY and Square XY trajectories. Panel (c) shows mean signed X, Y, and Z errors; shaded regions denote ±1 sample standard deviation across repetitions. Panel (d) compares raw and time-aligned RMSE for all recorded trajectory types and amplitudes; individual points are repetitions and error bars denote mean ±1 sample standard deviation.
+
+Representative path conditions:
+- Amplitude: 0.02 m
+- Circle diameter / square side: 40 mm
+- Frequency: 0.1 Hz
+- Nominal Circle XY speed: 12.6 mm/s
+- Nominal Square XY speed: 16.0 mm/s
+- Circle repetitions: 3
+- Square repetitions: 3
+
+One common three-dimensional temporal offset was fitted per repetition and applied equally to X, Y, and Z. This offset is an effective tracking lag incorporating filtering, step limiting, and robot dynamics; it is not communication latency.

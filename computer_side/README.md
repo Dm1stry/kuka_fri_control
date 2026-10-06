@@ -145,7 +145,41 @@ python scripts/record_trajectories.py \
   --output trajectory_data
 ```
 
-After reviewing `experiment.json`, add `--execute` to connect to and command the robot. For square trajectories, `amplitude` is half the side length. `square_xyz` follows the same XY square while adding sinusoidal Z motion. Each executed run produces one CSV file.
+After reviewing `experiment.json`, add `--execute` to connect to and command the robot. A common Cartesian origin is established once before recording (the current script applies its configured X offset before this initial approach). During the final `--closure-time` seconds of each run, the trajectory amplitude is smoothly reduced to zero, so the recorded reference ends at its starting point. The next repetition starts only after the robot reaches that endpoint within `--closure-tolerance`; the experiment stops if `--closure-timeout` expires. `--settle` adds a dwell at the closed endpoint. For square trajectories, `amplitude` is half the side length. `square_xyz` follows the same XY square while adding sinusoidal Z motion. Each executed run produces one CSV file.
+
+### Time-aligned analysis
+
+`scripts/analyze_time_aligned.py` estimates one common 3D lag per repetition, writes aligned trajectories without modifying the source CSV files, and generates an article-ready Markdown report and per-run metrics:
+
+```bash
+python scripts/analyze_time_aligned.py trajectory_data \
+  --output trajectory_analysis \
+  --max-lag 0.5
+```
+
+The fitted offset is an effective tracking lag that includes filtering, step limiting, and robot dynamics; it must not be reported as UDP or command-to-motion latency. Generate the compact four-panel article figure with:
+
+```bash
+python scripts/plot_article_tracking.py \
+  --aligned trajectory_analysis/aligned \
+  --metrics trajectory_analysis/metrics_per_run.csv \
+  --output trajectory_analysis/article_tracking \
+  --amplitude 0.02 --frequency 0.1 \
+  --formats pdf png
+```
+
+### Visualizing recorded repetitions
+
+`scripts/plot_trajectories.py` groups recordings with the same trajectory, amplitude, and frequency and plots their repetitions together. Each figure contains XY and 3D paths, position-error magnitude, separate signed-error plots for X, Y, and Z, and per-repetition mean, RMSE, and P95 statistics. Mean and RMSE values are also reported separately for X, Y, and Z.
+
+```bash
+python scripts/plot_trajectories.py trajectory_data \
+  --repetitions-per-figure 5 \
+  --output trajectory_plots \
+  --format pdf
+```
+
+Use `--repetitions-per-figure 0` (the default) to place every repetition in one figure. Pass `--show` for an interactive window; figures are always saved.
 
 ## Repository contents
 
@@ -189,6 +223,9 @@ After reviewing `experiment.json`, add `--execute` to connect to and command the
 |---|---|
 | `logger/logger.hpp/.cpp` | Buffered CSV logger; writes `controller_log.csv`. |
 | `scripts/record_trajectories.py` | Parameterized trajectory execution and dataset recorder. |
+| `scripts/plot_trajectories.py` | Batch visualization and error statistics for recorded repetitions. |
+| `scripts/analyze_time_aligned.py` | Common-lag trajectory alignment, aligned CSV export, and Markdown report generation. |
+| `scripts/plot_article_tracking.py` | Compact four-panel tracking figure for the main paper. |
 | `scripts/fri_python.py` | Python/UDP joint-command example supporting sequenced envelopes and legacy arrays. |
 | `scripts/print.py` | Exploratory plotting utility for `controller_log.csv`. |
 | `scripts/read_tenso.py` | Serial monitor for an external device on `/dev/ttyUSB0`. |

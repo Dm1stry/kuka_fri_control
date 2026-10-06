@@ -413,10 +413,10 @@ void TaskSpaceControl::updateVirtualTarget()
     const Eigen::Matrix<double,N_JOINTS,6> J_pinv = dampedPseudoInverse(J);
     const Eigen::Matrix<double,N_JOINTS,N_JOINTS> nullspace =
         Eigen::Matrix<double,N_JOINTS,N_JOINTS>::Identity() - J_pinv * J;
+    // Do not impose a preferred posture in the redundant degree of freedom.
+    // Secondary motion is activated only near a soft joint limit.
     const Eigen::Array<double,N_JOINTS,1> q_secondary =
-        getJointDelta(q_ref_, virtual_q_) +
         calcJointLimitDelta(virtual_q_);
-        // calcSingularityAvoidanceDelta(virtual_q_);
     const Eigen::Matrix<double,N_JOINTS,1> q_delta =
         J_pinv * step_error + nullspace * q_secondary.matrix();
     const Eigen::Array<double,N_JOINTS,1> q_command = virtual_q_ + q_delta.array();
